@@ -1,0 +1,97 @@
+Begin Object Class=/Script/Engine.SoundCue Name="E-DoorOpen_Cue"
+   Begin Object Class=/Script/AudioEditor.SoundCueGraph Name="SoundCueGraph_0"
+      Begin Object Class=/Script/AudioEditor.SoundCueGraphNode Name="SoundCueGraphNode_0"
+      End Object
+      Begin Object Class=/Script/AudioEditor.SoundCueGraphNode Name="SoundCueGraphNode_1"
+      End Object
+      Begin Object Class=/Script/AudioEditor.SoundCueGraphNode Name="SoundCueGraphNode_2"
+      End Object
+      Begin Object Class=/Script/AudioEditor.SoundCueGraphNode Name="SoundCueGraphNode_3"
+      End Object
+      Begin Object Class=/Script/AudioEditor.SoundCueGraphNode_Root Name="SoundCueGraphNode_Root_0"
+      End Object
+   End Object
+   Begin Object Class=/Script/Engine.SoundNodeDelay Name="SoundNodeDelay_0"
+   End Object
+   Begin Object Class=/Script/Engine.SoundNodeMixer Name="SoundNodeMixer_0"
+   End Object
+   Begin Object Class=/Script/Engine.SoundNodeWavePlayer Name="SoundNodeWavePlayer_0"
+   End Object
+   Begin Object Class=/Script/Engine.SoundNodeWavePlayer Name="SoundNodeWavePlayer_1"
+   End Object
+   Begin Object Name="SoundCueGraph_0"
+      Begin Object Name="SoundCueGraphNode_0"
+         SoundNode=SoundNodeWavePlayer'"E-DoorOpen_Cue:SoundNodeWavePlayer_0"'
+         NodePosX=-400
+         NodeGuid=411A23C04C7E7B656EBEACA9C00473D4
+         CustomProperties Pin (PinId=08B328CE4A2EE12C6987FCA30CB01465,PinName="Output",Direction="EGPD_Output",PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_2 4E1C56F142A076705169EDB84D12CC8E,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+      End Object
+      Begin Object Name="SoundCueGraphNode_1"
+         SoundNode=SoundNodeWavePlayer'"E-DoorOpen_Cue:SoundNodeWavePlayer_1"'
+         NodePosX=-624
+         NodePosY=80
+         NodeGuid=8C45928D454F5BA40B8F9C982AC9BB67
+         CustomProperties Pin (PinId=87824C704B294FC218D47CBC3F0EB97F,PinName="Output",Direction="EGPD_Output",PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_3 3DD24ABB482F86F5791A58B7D524B826,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+      End Object
+      Begin Object Name="SoundCueGraphNode_2"
+         SoundNode=SoundNodeMixer'"E-DoorOpen_Cue:SoundNodeMixer_0"'
+         NodePosX=-176
+         NodeGuid=A8E4340E4CDC34AB18A999A7CD2C6F58
+         CustomProperties Pin (PinId=8201BD5C4F540762C6C69AA13328E912,PinName="Output",Direction="EGPD_Output",PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_Root_0 3724D6D94E0289BA665FB18D0E03E952,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+         CustomProperties Pin (PinId=4E1C56F142A076705169EDB84D12CC8E,PinName="Input",PinFriendlyName=NSLOCTEXT("", "44077F284741096FF98F468B187F97CC", " "),PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_0 08B328CE4A2EE12C6987FCA30CB01465,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+         CustomProperties Pin (PinId=55195DBB41C6836E3DCB659AA8E9A93E,PinName="Input2",PinFriendlyName=NSLOCTEXT("", "ABF0629246905F861F6EA887CD406A75", " "),PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_3 AE60A4414B301232ABA4FEA86CAC94D9,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+      End Object
+      Begin Object Name="SoundCueGraphNode_3"
+         SoundNode=SoundNodeDelay'"E-DoorOpen_Cue:SoundNodeDelay_0"'
+         NodePosX=-336
+         NodePosY=80
+         NodeGuid=CD39B11C480A57EF68335495C55CC494
+         CustomProperties Pin (PinId=AE60A4414B301232ABA4FEA86CAC94D9,PinName="Output",Direction="EGPD_Output",PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_2 55195DBB41C6836E3DCB659AA8E9A93E,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+         CustomProperties Pin (PinId=3DD24ABB482F86F5791A58B7D524B826,PinName="Input",PinFriendlyName=NSLOCTEXT("", "110405254F38C7348674A6A1DACE3319", " "),PinType.PinCategory="SoundNode",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_1 87824C704B294FC218D47CBC3F0EB97F,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+      End Object
+      Begin Object Name="SoundCueGraphNode_Root_0"
+         NodePosY=-58
+         NodeGuid=3F569B16427378BA80CAF6945CC89117
+         CustomProperties Pin (PinId=3724D6D94E0289BA665FB18D0E03E952,PinType.PinCategory="SoundNode",PinType.PinSubCategory="Root",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsArray=False,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,LinkedTo=(SoundCueGraphNode_2 8201BD5C4F540762C6C69AA13328E912,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+      End Object
+      Schema=Class'"/Script/AudioEditor.SoundCueGraphSchema"'
+      Nodes(0)=SoundCueGraphNode_Root'"SoundCueGraphNode_Root_0"'
+      Nodes(1)=SoundCueGraphNode'"SoundCueGraphNode_0"'
+      Nodes(2)=SoundCueGraphNode'"SoundCueGraphNode_1"'
+      Nodes(3)=SoundCueGraphNode'"SoundCueGraphNode_2"'
+      Nodes(4)=SoundCueGraphNode'"SoundCueGraphNode_3"'
+      bAllowDeletion=False
+      GraphGuid=30779CF242AB2AA091A6CD9021E7DA13
+   End Object
+   Begin Object Name="SoundNodeDelay_0"
+      DelayMin=1.500000
+      DelayMax=1.500000
+      ChildNodes(0)=SoundNodeWavePlayer'"E-DoorOpen_Cue:SoundNodeWavePlayer_1"'
+      GraphNode=SoundCueGraphNode'"E-DoorOpen_Cue:SoundCueGraph_0.SoundCueGraphNode_3"'
+   End Object
+   Begin Object Name="SoundNodeMixer_0"
+      InputVolume(0)=1.000000
+      InputVolume(1)=1.000000
+      ChildNodes(0)=SoundNodeWavePlayer'"E-DoorOpen_Cue:SoundNodeWavePlayer_0"'
+      ChildNodes(1)=SoundNodeDelay'"E-DoorOpen_Cue:SoundNodeDelay_0"'
+      GraphNode=SoundCueGraphNode'"E-DoorOpen_Cue:SoundCueGraph_0.SoundCueGraphNode_2"'
+   End Object
+   Begin Object Name="SoundNodeWavePlayer_0"
+      SoundWaveAssetPtr=/Game/HorrorEngine/Audio/Elecronic/E-DoorOpen.E-DoorOpen
+      GraphNode=SoundCueGraphNode'"E-DoorOpen_Cue:SoundCueGraph_0.SoundCueGraphNode_0"'
+   End Object
+   Begin Object Name="SoundNodeWavePlayer_1"
+      SoundWaveAssetPtr=/Game/HorrorEngine/Audio/Elecronic/E-DoorOpenLoop.E-DoorOpenLoop
+      bLooping=True
+      GraphNode=SoundCueGraphNode'"E-DoorOpen_Cue:SoundCueGraph_0.SoundCueGraphNode_1"'
+   End Object
+   FirstNode=SoundNodeMixer'"SoundNodeMixer_0"'
+   AllNodes(0)=SoundNodeWavePlayer'"SoundNodeWavePlayer_0"'
+   AllNodes(1)=SoundNodeWavePlayer'"SoundNodeWavePlayer_1"'
+   AllNodes(2)=SoundNodeMixer'"SoundNodeMixer_0"'
+   AllNodes(3)=SoundNodeDelay'"SoundNodeDelay_0"'
+   SoundCueGraph=SoundCueGraph'"SoundCueGraph_0"'
+   bHasDelayNode=True
+   Duration=10001.500000
+   MaxDistance=2097152.000000
+End Object
