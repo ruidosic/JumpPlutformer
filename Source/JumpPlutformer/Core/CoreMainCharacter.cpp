@@ -6,36 +6,36 @@
 #include "Core/CorePlayerController.h"
 #include "Core/PortalManager.h"
 
-// Sets default values
+
 ACoreMainCharacter::ACoreMainCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
 
+	PrimaryActorTick.bCanEverTick = true;
+	PC = nullptr;
 }
 
-// Called when the game starts or when spawned
+
 void ACoreMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Set Player Controller to get access to PortalManager
+	PC = Cast<ACorePlayerController>(UGameplayStatics::GetPlayerController(this, 0));
 }
 
 
-// Called to bind functionality to input
+
 void ACoreMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
-void ACoreMainCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction & ThisTickFunction)
+void ACoreMainCharacter::Tick(float DeltaTime)
 {
-	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	if (UGameplayStatics::GetPlayerController(GetWorld(), 0) != nullptr)
+	Super::Tick(DeltaTime);	
+	if (PC && PC->PortalManager)
 	{
-		ACorePlayerController* PC = Cast<ACorePlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-		PC->PortalManager->Update(DeltaTime);
+		PC->PortalManager->Update(DeltaTime); 
 	}
 }
 

@@ -4,10 +4,37 @@
 #include "CorePlayerController.h"
 #include "Engine/World.h"
 #include "Core/PortalManager.h"
+#include "Core/CoreLocalPlayer.h"
+#include "SceneView.h"
+#include "Engine/LocalPlayer.h"
 
 void ACorePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+	CreatePortalManager();
+}
+
+FMatrix ACorePlayerController::GetCameraProjectionMatrix()
+{
+	FMatrix ProjectionMatrix;
+
+	if (GetLocalPlayer() != nullptr)
+	{
+		FSceneViewProjectionData PlayerProjectionData;
+
+		GetLocalPlayer()->GetProjectionData(GetLocalPlayer()->ViewportClient->Viewport, EStereoscopicPass::eSSP_FULL, PlayerProjectionData);
+
+		ProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
+	}
+
+	return ProjectionMatrix;
+}
+
+void ACorePlayerController::PerformCameraCut()
+{
+	UCoreLocalPlayer* LocalPlayer = Cast<UCoreLocalPlayer>(GetLocalPlayer());
+	if (LocalPlayer)
+		LocalPlayer->PerformCameraCut();
 }
 
 void ACorePlayerController::CreatePortalManager()

@@ -7,6 +7,8 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/BoxComponent.h"
+#include "Core/CorePlayerController.h"
 
 ACorePortal::ACorePortal()
 {
@@ -169,6 +171,52 @@ FRotator ACorePortal::ConvertRotationToActorSpace(FRotator Rotation, AActor * Cu
 	FQuat NewWorldQuat = TargetTransform.GetRotation() * LocalQuat;
 	
 	return NewWorldQuat.Rotator();
+}
+
+bool ACorePortal::IsPointInsideBox(FVector Point, UBoxComponent * Box)
+{
+	if (Box != nullptr)
+	{
+		//From :
+		//https://stackoverflow.com/questions/52673935/check-if-3d-point-inside-a-box/52674010
+
+		FVector Center = Box->GetComponentLocation();
+		FVector Half = Box->GetScaledBoxExtent();
+		FVector DirectionX = Box->GetForwardVector();
+		FVector DirectionY = Box->GetRightVector();
+		FVector DirectionZ = Box->GetUpVector();
+
+		FVector Direction = Point - Center;
+
+		bool IsInside = FMath::Abs(FVector::DotProduct(Direction, DirectionX)) <= Half.X &&
+			FMath::Abs(FVector::DotProduct(Direction, DirectionY)) <= Half.Y &&
+			FMath::Abs(FVector::DotProduct(Direction, DirectionZ)) <= Half.Z;
+
+		return IsInside;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+APortalManager* ACorePortal::GetPortalManager(AActor * Context)
+{
+	APortalManager* Manager = nullptr;
+
+	//Retrieve the World from the Context actor
+	if (Context != nullptr && Context->GetWorld() != nullptr)
+	{
+		//Find PlayerController
+		ACorePlayerController* PC = Cast<ACorePlayerController>(Context->GetWorld()->GetFirstPlayerController());
+
+		//Retrieve the Portal Manager
+		if (PC != nullptr && PC->PortalManager)
+		{
+			Manager = PC->PortalManager;
+		}
+	}
+	return Manager;
 }
 
 void ACorePortal::ChangePlayerVelocity(AActor * ActorToTeleport)

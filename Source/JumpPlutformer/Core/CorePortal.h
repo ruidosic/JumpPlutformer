@@ -6,6 +6,8 @@
 #include "CorePortal.generated.h"
 
 class UTexture;
+class UBoxComponent;
+class APortalManager;
 
 UCLASS()
 class JUMPPLUTFORMER_API ACorePortal : public AActor
@@ -65,6 +67,12 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	USceneComponent* PortalRootComponent;
+
+	UFUNCTION(BlueprintCallable, Category = "Portal")
+	bool IsPointInsideBox(FVector Point, UBoxComponent* Box);
+
+	UFUNCTION(BlueprintCallable, Category = "Portal")
+	APortalManager* GetPortalManager(AActor* Context);
 
 private:
 	

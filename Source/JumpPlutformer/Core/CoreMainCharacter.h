@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "CoreMainCharacter.generated.h"
 
+class ACorePlayerController;
+
 UCLASS()
 class JUMPPLUTFORMER_API ACoreMainCharacter : public ACharacter
 {
@@ -21,7 +23,11 @@ protected:
 
 public:	
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	ACorePlayerController* PC;
+	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+	virtual void Tick(float DeltaTime) override;
+
 };

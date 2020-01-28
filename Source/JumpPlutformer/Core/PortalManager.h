@@ -40,6 +40,10 @@ public:
 	//Update SceneCapture
 	void UpdateCapture(ACorePortal* Portal);
 
+	void ChangeSceneCaptureRotation(ACorePortal * Portal, AActor * Target);
+
+	void ChangeSceneCaptureLocation(ACorePortal * Portal, AActor * Target);
+
 	//Accessor for Debug purpose
 	UTexture* GetPortalTexture();
 

@@ -26,6 +26,11 @@ public:
 
 	UPROPERTY()
 	APortalManager* PortalManager = nullptr;
+
+	FMatrix GetCameraProjectionMatrix();
+
+	void PerformCameraCut();
+
 private:
 
 	void CreatePortalManager();
