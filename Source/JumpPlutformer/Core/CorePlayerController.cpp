@@ -4,7 +4,6 @@
 #include "CorePlayerController.h"
 #include "Engine/World.h"
 #include "Core/PortalManager.h"
-#include "Core/CoreLocalPlayer.h"
 #include "SceneView.h"
 #include "Engine/LocalPlayer.h"
 
@@ -30,12 +29,6 @@ FMatrix ACorePlayerController::GetCameraProjectionMatrix()
 	return ProjectionMatrix;
 }
 
-void ACorePlayerController::PerformCameraCut()
-{
-	UCoreLocalPlayer* LocalPlayer = Cast<UCoreLocalPlayer>(GetLocalPlayer());
-	if (LocalPlayer)
-		LocalPlayer->PerformCameraCut();
-}
 
 void ACorePlayerController::CreatePortalManager()
 {

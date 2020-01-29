@@ -29,8 +29,6 @@ public:
 
 	FMatrix GetCameraProjectionMatrix();
 
-	void PerformCameraCut();
-
 private:
 
 	void CreatePortalManager();

@@ -12,7 +12,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Camera/PlayerCameraManager.h"
-
+#include "Kismet/GameplayStatics.h"
 
 APortalManager::APortalManager()
 {
@@ -29,12 +29,8 @@ void APortalManager::RequestTeleportByPortal(ACorePortal * Portal, AActor * Targ
 {
 	if (Portal != nullptr && TargetToTeleport != nullptr)
 	{
-		if (ControllerOwner)
-		{
-			ControllerOwner->PerformCameraCut();
-		}
+		
 		Portal->TeleportActor(TargetToTeleport);
-
 
 		//-----------------------------------
 		//Force update
@@ -44,7 +40,7 @@ void APortalManager::RequestTeleportByPortal(ACorePortal * Portal, AActor * Targ
 
 		if (FuturePortal != nullptr)
 		{
-			FuturePortal->ForceTick(); //Force update before the player render its view since he just teleported
+			FuturePortal->SwitchScaleVertex(); //Force update before the player render its view since he just teleported
 			UpdateCapture(FuturePortal);
 		}
 	}
@@ -283,7 +279,7 @@ void APortalManager::ChangeSceneCaptureLocation(ACorePortal * Portal, AActor * T
 	if (ControllerOwner)
 	{
 		FVector CameraLocation = ControllerOwner->PlayerCameraManager->GetCameraLocation();
-		FVector NewLocation = Portal->ConvertLocationToActorSpace(CameraLocation, Portal, Target);
+		FVector NewLocation = Portal->ConvertLocation(Portal, Target, CameraLocation);
 		SceneCapture->SetWorldLocation(NewLocation);
 	}
 }

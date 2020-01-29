@@ -1,14 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "CorePortal.h"
 #include "Engine/Texture.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Core/CorePlayerController.h"
+#include "Core/PortalManager.h"
 
 ACorePortal::ACorePortal()
 {
@@ -23,6 +26,16 @@ ACorePortal::ACorePortal()
 	PortalRootComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	PortalRootComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	PortalRootComponent->Mobility = EComponentMobility::Movable;
+	
+	PortalMesh = CreateDefaultSubobject<UStaticMeshComponent>("PortalMesh");
+	PortalMesh->SetupAttachment(PortalRootComponent);
+
+	PortalTrigger = CreateDefaultSubobject<UBoxComponent>("PortalCollision");
+	PortalTrigger->SetupAttachment(PortalRootComponent);
+	PortalTrigger->SetRelativeLocation(FVector(0.0f, 0.0f, 65.0f));
+	PortalTrigger->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	PortalTrigger->SetBoxExtent(FVector(5.f, 65, 65), false);
+
 
 }
 
@@ -32,12 +45,6 @@ void ACorePortal::BeginPlay()
 	
 }
 
-// Called every frame
-void ACorePortal::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 bool ACorePortal::IsActive()
 {
@@ -57,7 +64,20 @@ void ACorePortal::SetRTT_Implementation(UTexture* RenderTexture)
 {
 }
 
-void ACorePortal::ForceTick_Implementation()
+void ACorePortal::SwitchScaleVertex()
+{
+	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+	if(IsPointInsideBox(CameraLocation, PortalTrigger))
+	{
+		SetScaleVertexParam(1);
+	}
+	else
+	{
+		SetScaleVertexParam(0);
+	}
+}
+
+void ACorePortal::SetScaleVertexParam_Implementation(float Value)
 {
 }
 
@@ -71,6 +91,11 @@ void ACorePortal::SetTarget(AActor * NewTarget)
 	Target = NewTarget;
 }
 
+
+		/* Сalculations about the relationship
+			 between point and portal */
+
+
 bool ACorePortal::IsPointInFrontOfPortal(FVector Point, FVector PortalLocation, FVector PortalNormal)
 {
 	FPlane PortalPlane = FPlane(PortalLocation, PortalNormal);
@@ -78,16 +103,16 @@ bool ACorePortal::IsPointInFrontOfPortal(FVector Point, FVector PortalLocation, 
 	return PortalDot >= 0; 	//If < 0 means we are behind the Plane
 }
 
-// function create segment between previous and current position, if this segment intersect portal plane, then we check intersect direction
 bool ACorePortal::IsPointCrossingPortal(FVector Point, FVector PortalLocation, FVector PortalNormal) 
 {
+	// function create segment between previous and current position, if this segment intersect portal plane, then we check intersect direction
+	
 	FVector IntersectionPoint;
-	FPlane PortalPlane = FPlane(PortalLocation, PortalNormal);
-	float PortalDot = PortalPlane.PlaneDot(Point);
 	bool IsCrossing = false;
-	bool IsInFront = PortalDot >= 0;
+	bool IsInFront = IsPointInFrontOfPortal(Point, PortalLocation, PortalNormal);
 
 	// Last position and Point make segment and if PortalPlane intresect this segment then function return true
+	FPlane PortalPlane = FPlane(PortalLocation, PortalNormal);
 	bool IsIntersect = FMath::SegmentPlaneIntersection(LastPosition, Point, PortalPlane, IntersectionPoint); 
 	
 	//Did we intersect the portal since last Location ?
@@ -105,80 +130,10 @@ bool ACorePortal::IsPointCrossingPortal(FVector Point, FVector PortalLocation, F
 	return IsCrossing;
 }
 
-
-void ACorePortal::TeleportActor(AActor * ActorToTeleport)
-{
-	if (ActorToTeleport == nullptr || Target == nullptr)
-		return;
-
-	FHitResult HitResult;
-
-	//Compute and apply new location
-	FVector NewLocation = ConvertLocationToActorSpace(ActorToTeleport->GetActorLocation(), this, Target);
-	ActorToTeleport->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
-
-	//Compute and apply new rotation
-	FRotator NewRotation = ConvertRotationToActorSpace(ActorToTeleport->GetActorRotation(), this, Target);
-	ActorToTeleport->SetActorRotation(NewRotation);
-	
-	ChangePlayerVelocity(ActorToTeleport);
-
-	ChangeComponentsVelocity(ActorToTeleport);
-	
-	ChangePlayerControlRotation(ActorToTeleport);
-
-	LastPosition = NewLocation;
-}
-
-FVector ACorePortal::ConvertLocationToActorSpace(FVector Location, AActor * CurrentActor, AActor * TargetActor)
-{
-	if (CurrentActor == nullptr || TargetActor == nullptr)
-		return FVector::ZeroVector;
-	
-	FVector Direction = Location - CurrentActor->GetActorLocation();
-	
-	FVector TargetLocation = TargetActor->GetActorLocation();
-	
-	FVector Dots;
-	Dots.X = FVector::DotProduct(Direction, CurrentActor->GetActorForwardVector());
-	Dots.Y = FVector::DotProduct(Direction, CurrentActor->GetActorRightVector());
-	Dots.Z = FVector::DotProduct(Direction, CurrentActor->GetActorUpVector());
-
-	FVector NewDirection = Dots.X * Target->GetActorForwardVector() + Dots.Y * Target->GetActorRightVector() + Dots.Z * Target->GetActorUpVector();
-	return TargetLocation + NewDirection;
-}
-
-FVector ACorePortal::ConvertVelocityToActorSpace(FVector Velocity, AActor * CurrentActor, AActor * TargetActor)
-{
-	FVector Dots;
-	Dots.X = FVector::DotProduct(Velocity, GetActorForwardVector());
-	Dots.Y = FVector::DotProduct(Velocity, GetActorRightVector());
-	Dots.Z = FVector::DotProduct(Velocity, GetActorUpVector());
-	FVector NewVelocity = Dots.X * Target->GetActorForwardVector() + Dots.Y * Target->GetActorRightVector()+ Dots.Z * Target->GetActorUpVector();
-	return Velocity + NewVelocity;
-}
-
-FRotator ACorePortal::ConvertRotationToActorSpace(FRotator Rotation, AActor * CurrentActor, AActor * TargetActor)
-{
-	if (CurrentActor == nullptr || TargetActor == nullptr)
-		return FRotator::ZeroRotator;
-	
-	FTransform SourceTransform = CurrentActor->GetActorTransform();
-	FTransform TargetTransform = TargetActor->GetActorTransform();
-
-	FQuat QuatRotation = FQuat(Rotation);
-	FQuat LocalQuat = SourceTransform.GetRotation().Inverse() * QuatRotation;
-	FQuat NewWorldQuat = TargetTransform.GetRotation() * LocalQuat;
-	
-	return NewWorldQuat.Rotator();
-}
-
 bool ACorePortal::IsPointInsideBox(FVector Point, UBoxComponent * Box)
 {
 	if (Box != nullptr)
 	{
-		//From :
-		//https://stackoverflow.com/questions/52673935/check-if-3d-point-inside-a-box/52674010
 
 		FVector Center = Box->GetComponentLocation();
 		FVector Half = Box->GetScaledBoxExtent();
@@ -200,24 +155,75 @@ bool ACorePortal::IsPointInsideBox(FVector Point, UBoxComponent * Box)
 	}
 }
 
-APortalManager* ACorePortal::GetPortalManager(AActor * Context)
+		/* Сonverting Vectors Spaces */
+
+
+FVector ACorePortal::ConvertLocation(AActor * CurrentPortal, AActor * TargetPortal, FVector Location)
 {
-	APortalManager* Manager = nullptr;
-
-	//Retrieve the World from the Context actor
-	if (Context != nullptr && Context->GetWorld() != nullptr)
-	{
-		//Find PlayerController
-		ACorePlayerController* PC = Cast<ACorePlayerController>(Context->GetWorld()->GetFirstPlayerController());
-
-		//Retrieve the Portal Manager
-		if (PC != nullptr && PC->PortalManager)
-		{
-			Manager = PC->PortalManager;
-		}
-	}
-	return Manager;
+	FTransform CurrentPortalTransform = CurrentPortal->GetActorTransform();
+	FVector InversedScale = FVector(-1 * CurrentPortalTransform.GetScale3D().X,
+									-1 * CurrentPortalTransform.GetScale3D().Y,
+									CurrentPortalTransform.GetScale3D().Z);
+	CurrentPortalTransform = FTransform(CurrentPortalTransform.GetRotation(), CurrentPortalTransform.GetLocation(), InversedScale);
+	return UKismetMathLibrary::TransformLocation(TargetPortal->GetActorTransform(), 
+			UKismetMathLibrary::InverseTransformLocation(CurrentPortalTransform, Location));
 }
+
+FRotator ACorePortal::ConvertRotation(AActor * CurrentPortal, AActor * TargetPortal, FRotator Rotation)
+{
+	FVector X_Axes, Y_Axes, Z_Axes;
+	UKismetMathLibrary::GetAxes(Rotation, X_Axes, Y_Axes, Z_Axes);
+	return 	UKismetMathLibrary::MakeRotationFromAxes(ConvertDirection(CurrentPortal, TargetPortal, X_Axes),
+													ConvertDirection(CurrentPortal, TargetPortal, Y_Axes),
+													ConvertDirection(CurrentPortal, TargetPortal, Z_Axes));;
+}
+
+FVector ACorePortal::ConvertDirection(AActor * CurrentPortal, AActor * TargetPortal, FVector Direction)
+{
+	FVector CurrentPortalLocalDirection = UKismetMathLibrary::InverseTransformDirection(CurrentPortal->GetActorTransform(), Direction);
+	FVector CPLD_MirroredByX = UKismetMathLibrary::MirrorVectorByNormal(CurrentPortalLocalDirection, FVector(1, 0, 0));
+	FVector CPLD_MirroredByXY = UKismetMathLibrary::MirrorVectorByNormal(CPLD_MirroredByX, FVector(0, 1, 0));
+	return UKismetMathLibrary::TransformDirection(TargetPortal->GetActorTransform(), CPLD_MirroredByXY);
+}
+
+FVector ACorePortal::ConvertVelocity(AActor * CurrentActor, AActor * TargetActor, FVector Velocity)
+{
+	return ConvertDirection(CurrentActor, TargetActor, Velocity.GetSafeNormal()) * Velocity.Size();
+}
+
+
+
+
+		/* Teleport Overlapped Actors */
+
+
+void ACorePortal::TeleportActor(AActor * ActorToTeleport)
+{
+	if (ActorToTeleport == nullptr || Target == nullptr || ActorToTeleport == this)
+		return;
+
+	FHitResult HitResult;
+
+	//Compute and apply new location
+	FVector NewLocation = ConvertLocation(this, Target, ActorToTeleport->GetActorLocation());
+	ActorToTeleport->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
+
+	//Compute and apply new rotation
+	FRotator NewRotation = ConvertRotation(this, Target, ActorToTeleport->GetActorRotation());
+	ActorToTeleport->SetActorRotation(NewRotation);
+
+	ChangeComponentsVelocity(ActorToTeleport);
+	
+	ChangePlayerVelocity(ActorToTeleport);
+
+	ChangePlayerControlRotation(ActorToTeleport);
+
+	LastPosition = NewLocation;
+}
+
+
+		/* Сhange Different Properties after Teleport */
+
 
 void ACorePortal::ChangePlayerVelocity(AActor * ActorToTeleport)
 {
@@ -231,7 +237,7 @@ void ACorePortal::ChangePlayerVelocity(AActor * ActorToTeleport)
 
 		SavedVelocity = PlayerCharacter->GetVelocity();
 
-		FVector NewVelocity = ConvertVelocityToActorSpace(SavedVelocity, this, Target);
+		FVector NewVelocity = ConvertVelocity(this, Target, SavedVelocity);
 
 		PlayerCharacter->GetMovementComponent()->Velocity = NewVelocity;
 	}
@@ -247,7 +253,7 @@ void ACorePortal::ChangeComponentsVelocity(AActor * ActorToTeleport)
 		if (PrimitiveComp)
 		{
 			// Change Linear Physics Velocity
-			FVector NewVelocity = ConvertVelocityToActorSpace(PrimitiveComp->GetPhysicsLinearVelocity(), this, Target);
+			FVector NewVelocity = ConvertVelocity(this, Target, PrimitiveComp->GetPhysicsLinearVelocity());
 
 			if (NewVelocity.SizeSquared() > 1)			//we moving
 			{
@@ -255,7 +261,7 @@ void ACorePortal::ChangeComponentsVelocity(AActor * ActorToTeleport)
 			}
 
 			// Change Angular Physics Velocity
-			NewVelocity = ConvertVelocityToActorSpace(PrimitiveComp->GetPhysicsAngularVelocityInRadians(), this, Target);
+			NewVelocity = ConvertVelocity(this, Target, PrimitiveComp->GetPhysicsAngularVelocityInRadians());
 
 			if (NewVelocity.SizeSquared() > 1)
 			{
@@ -280,9 +286,32 @@ void ACorePortal::ChangePlayerControlRotation(AActor * ActorToTeleport)
 			//-------------------------------
 			if (PC)
 			{
-				FRotator NewRotation = ConvertRotationToActorSpace(PC->GetControlRotation(), this, Target);
+				FRotator NewRotation = ConvertRotation(this, Target, PC->GetControlRotation());
 				PC->SetControlRotation(NewRotation);
 			}
+		}
+	}
+}
+
+
+
+void ACorePortal::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (IsActive())
+	{
+		FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+		if (IsPointInsideBox(CameraLocation, PortalTrigger))
+		{
+			SetScaleVertexParam(1.0f);
+		}
+		if (IsPointInsideBox(CameraLocation, PortalTrigger) && 
+			IsPointCrossingPortal(CameraLocation, PortalRootComponent->GetComponentLocation(), PortalRootComponent->GetForwardVector()))
+		{
+			// Cut this frame
+			UGameplayStatics::GetPlayerCameraManager(this, 0)->SetGameCameraCutThisFrame();
+			ACorePlayerController* PC = Cast<ACorePlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+			PC->PortalManager->RequestTeleportByPortal(this, UGameplayStatics::GetPlayerPawn(this, 0));
 		}
 	}
 }
