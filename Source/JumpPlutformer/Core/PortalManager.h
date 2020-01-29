@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "PortalManager.generated.h"
 
-class ACorePortal;
+class AAdvancedPortal;
 class UTexture;
 class USceneCaptureComponent2D;
 class UCanvasRenderTarget2D;
@@ -22,7 +22,7 @@ public:
 
 	//Called by a Portal actor when wanting to teleport something
 	UFUNCTION(BlueprintCallable)
-	void RequestTeleportByPortal(ACorePortal* Portal, AActor* TargetToTeleport);
+	void RequestTeleportByPortal(AAdvancedPortal* Portal, AActor* TargetToTeleport);
 
 	//Save a reference to the PlayerControler
 	void SetControllerOwner(ACorePlayerController* NewOwner);
@@ -35,14 +35,14 @@ public:
 
 	//Find all the portals in world and update them
 	//returns the most valid/usable one for the Player
-	ACorePortal* UpdatePortalsInWorld();
+	AAdvancedPortal* UpdatePortalsInWorld();
 
 	//Update SceneCapture
-	void UpdateCapture(ACorePortal* Portal);
+	void UpdateCapture(AAdvancedPortal* Portal);
 
-	void ChangeSceneCaptureRotation(ACorePortal * Portal, AActor * Target);
+	void ChangeSceneCaptureRotation(AAdvancedPortal * Portal, AActor * Target);
 
-	void ChangeSceneCaptureLocation(ACorePortal * Portal, AActor * Target);
+	void ChangeSceneCaptureLocation(AAdvancedPortal * Portal, AActor * Target);
 
 	//Accessor for Debug purpose
 	UTexture* GetPortalTexture();

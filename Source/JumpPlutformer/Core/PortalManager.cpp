@@ -4,7 +4,7 @@
 #include "PortalManager.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Core/CorePlayerController.h"
-#include "Core/CorePortal.h"
+#include "Portals/AdvancedPortal.h"
 #include "Core/CoreMainCharacter.h"
 #include "Engine/CanvasRenderTarget2D.h"
 #include "Engine/TextureRenderTarget2D.h"
@@ -25,7 +25,7 @@ APortalManager::APortalManager()
 }
 
 
-void APortalManager::RequestTeleportByPortal(ACorePortal * Portal, AActor * TargetToTeleport)
+void APortalManager::RequestTeleportByPortal(AAdvancedPortal * Portal, AActor * TargetToTeleport)
 {
 	if (Portal != nullptr && TargetToTeleport != nullptr)
 	{
@@ -36,7 +36,7 @@ void APortalManager::RequestTeleportByPortal(ACorePortal * Portal, AActor * Targ
 		//Force update
 		//-----------------------------------
 
-		ACorePortal* FuturePortal = UpdatePortalsInWorld();
+		AAdvancedPortal* FuturePortal = UpdatePortalsInWorld();
 
 		if (FuturePortal != nullptr)
 		{
@@ -100,16 +100,16 @@ void APortalManager::Init()
 
 void APortalManager::GeneratePortalTexture()
 {
-	int32 CurrentSizeX = 1920;
-	int32 CurrentSizeY = 1080;
+	int32 CurrentSizeX = 1280;
+	int32 CurrentSizeY = 720;
 
 	if (ControllerOwner)
 	{
 		ControllerOwner->GetViewportSize(CurrentSizeX, CurrentSizeY);
 	}
 
-	CurrentSizeX = FMath::Clamp(int(CurrentSizeX / 1.7), 128, 1920); //1920 / 1.5 = 1280
-	CurrentSizeY = FMath::Clamp(int(CurrentSizeY / 1.7), 128, 1080);
+	CurrentSizeX = FMath::Clamp(int(CurrentSizeX / 1.7), 128, 1280); //1920 / 1.5 = 1280
+	CurrentSizeY = FMath::Clamp(int(CurrentSizeY / 1.7), 128, 720);
 
 	if (CurrentSizeX == PreviousScreenSizeX
 		&& CurrentSizeY == PreviousScreenSizeY)
@@ -159,7 +159,7 @@ void APortalManager::Update(float DeltaTime)
 	//-----------------------------------
 	//Find portals in the level and update them
 	//-----------------------------------
-	ACorePortal* Portal = UpdatePortalsInWorld();
+	AAdvancedPortal* Portal = UpdatePortalsInWorld();
 
 	if (Portal)
 	{
@@ -167,7 +167,7 @@ void APortalManager::Update(float DeltaTime)
 	}
 }
 
-ACorePortal * APortalManager::UpdatePortalsInWorld()
+AAdvancedPortal* APortalManager::UpdatePortalsInWorld()
 {
 	if (ControllerOwner == nullptr)
 	{
@@ -177,21 +177,20 @@ ACorePortal * APortalManager::UpdatePortalsInWorld()
 	//-----------------------------------
 	//Update Portal actors in the world (and active one if nearby)
 	//-----------------------------------
-	ACorePortal* ActivePortal = nullptr;
+	AAdvancedPortal* ActivePortal = nullptr;
 	FVector PlayerLocation = Character->GetActorLocation();
 	float Distance = 4096.0f;
 
-	for (TActorIterator<ACorePortal>ActorItr(GetWorld()); ActorItr; ++ActorItr)
+	for (TActorIterator<AAdvancedPortal>ActorItr(GetWorld()); ActorItr; ++ActorItr)
 	{
-		ACorePortal* Portal = *ActorItr;
-		FVector PortalLocation = Portal->GetActorLocation();
-		FVector PortalNormal = -1 * Portal->GetActorForwardVector();
+		AAdvancedPortal* Portal = *ActorItr;
 
 		//Reset Portal
 		Portal->ClearRTT();
 		Portal->SetActive(false);
 
 		//Find the closest Portal when the player is Standing in front of
+		FVector PortalLocation = Portal->GetActorLocation();
 		float NewDistance = FMath::Abs(FVector::Dist(PlayerLocation, PortalLocation));
 
 		if (NewDistance < Distance)
@@ -203,7 +202,7 @@ ACorePortal * APortalManager::UpdatePortalsInWorld()
 	return ActivePortal; // closest portal 
 }
 
-void APortalManager::UpdateCapture(ACorePortal * Portal)
+void APortalManager::UpdateCapture(AAdvancedPortal * Portal)
 {
 	if (!ControllerOwner)
 	{
@@ -223,17 +222,15 @@ void APortalManager::UpdateCapture(ACorePortal * Portal)
 		//Place the SceneCapture to the Target
 		if (Target && Portal)
 		{
-			ChangeSceneCaptureLocation(Portal, Target);
-
-			ChangeSceneCaptureRotation(Portal, Target);
-
 			//-------------------------------
 			//Clip Plane : to ignore objects between the
 			//SceneCapture and the Target of the portal
 			//-------------------------------
-			SceneCapture->ClipPlaneNormal = -1 * Target->GetActorForwardVector();
-			SceneCapture->ClipPlaneBase = Target->GetActorLocation()
-				+ (SceneCapture->ClipPlaneNormal * -1.5f); //Offset to avoid visible pixel border
+			SceneCapture->ClipPlaneNormal = Target->GetActorForwardVector();
+			SceneCapture->ClipPlaneBase = Target->GetActorLocation(); //Offset to avoid visible pixel border
+		
+			ChangeSceneCaptureLocation(Portal, Target);
+			ChangeSceneCaptureRotation(Portal, Target);
 		}
 
 		//Switch on the valid Portal
@@ -252,31 +249,29 @@ void APortalManager::UpdateCapture(ACorePortal * Portal)
 	}
 }
 
-void APortalManager::ChangeSceneCaptureRotation(ACorePortal * Portal, AActor * Target)
+void APortalManager::ChangeSceneCaptureRotation(AAdvancedPortal * Portal, AActor * Target)
 {
 	//-------------------------------
 	//Compute new Rotation in the space of the
 	//Target location
 	//-------------------------------
-	FTransform SourceTransform = Portal->GetActorTransform();
-	FTransform TargetTransform = Target->GetActorTransform();
-
-	FRotator CameraRotation = ControllerOwner->GetControlRotation();
-
-	FQuat LocalQuat = SourceTransform.GetRotation().Inverse() * FQuat(CameraRotation);
-	FQuat NewWorldQuat = TargetTransform.GetRotation() * LocalQuat;
-
-	//Update SceneCapture rotation
-	SceneCapture->SetWorldRotation(NewWorldQuat);
+	if (ControllerOwner && Portal && Target)
+	{
+		FRotator CameraRotation = ControllerOwner->PlayerCameraManager->GetCameraRotation();
+		FRotator NewRotation = Portal->ConvertRotation(Portal, Target, CameraRotation);
+			
+		//Update SceneCapture rotation
+		SceneCapture->SetWorldRotation(NewRotation);
+	}
 }
 
-void APortalManager::ChangeSceneCaptureLocation(ACorePortal * Portal, AActor * Target)
+void APortalManager::ChangeSceneCaptureLocation(AAdvancedPortal * Portal, AActor * Target)
 {
 				//-------------------------------
 			//Compute new location in the space of the target actor
 			//(which may not be aligned to world)
 			//-------------------------------
-	if (ControllerOwner)
+	if (ControllerOwner && Portal && Target)
 	{
 		FVector CameraLocation = ControllerOwner->PlayerCameraManager->GetCameraLocation();
 		FVector NewLocation = Portal->ConvertLocation(Portal, Target, CameraLocation);

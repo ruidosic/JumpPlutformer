@@ -16,44 +16,19 @@
 ACorePortal::ACorePortal()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	bIsActive = false;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	RootComponent->Mobility = EComponentMobility::Static;
-
-	PortalRootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PortalRootComponent"));
-	PortalRootComponent->SetupAttachment(GetRootComponent());
-	PortalRootComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	PortalRootComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	PortalRootComponent->Mobility = EComponentMobility::Movable;
-	
-	PortalMesh = CreateDefaultSubobject<UStaticMeshComponent>("PortalMesh");
-	PortalMesh->SetupAttachment(PortalRootComponent);
-
-	PortalTrigger = CreateDefaultSubobject<UBoxComponent>("PortalCollision");
-	PortalTrigger->SetupAttachment(PortalRootComponent);
-	PortalTrigger->SetRelativeLocation(FVector(0.0f, 0.0f, 65.0f));
-	PortalTrigger->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	PortalTrigger->SetBoxExtent(FVector(5.f, 65, 65), false);
-
+	PortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PortalMesh"));
 
 }
 
 void ACorePortal::BeginPlay()
 {
 	Super::BeginPlay();
-	
-}
 
-
-bool ACorePortal::IsActive()
-{
-	return bIsActive;
-}
-
-void ACorePortal::SetActive(bool NewActive)
-{
-	bIsActive = NewActive;
+	PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
+	PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 }
 
 void ACorePortal::ClearRTT_Implementation()
@@ -62,19 +37,6 @@ void ACorePortal::ClearRTT_Implementation()
 
 void ACorePortal::SetRTT_Implementation(UTexture* RenderTexture)
 {
-}
-
-void ACorePortal::SwitchScaleVertex()
-{
-	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
-	if(IsPointInsideBox(CameraLocation, PortalTrigger))
-	{
-		SetScaleVertexParam(1);
-	}
-	else
-	{
-		SetScaleVertexParam(0);
-	}
 }
 
 void ACorePortal::SetScaleVertexParam_Implementation(float Value)
@@ -155,6 +117,17 @@ bool ACorePortal::IsPointInsideBox(FVector Point, UBoxComponent * Box)
 	}
 }
 
+bool ACorePortal::IsPlayerLookTowardPortal(AActor * CurrentPortal)
+{
+	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(this, 0)->GetActorLocation();
+	FVector ViewDirection = CameraLocation - PlayerLocation;
+	if (FVector::DotProduct(ViewDirection, CurrentPortal->GetActorForwardVector()) >= 0)
+		return true;
+	else
+		return false;
+}
+
 		/* Сonverting Vectors Spaces */
 
 
@@ -175,7 +148,7 @@ FRotator ACorePortal::ConvertRotation(AActor * CurrentPortal, AActor * TargetPor
 	UKismetMathLibrary::GetAxes(Rotation, X_Axes, Y_Axes, Z_Axes);
 	return 	UKismetMathLibrary::MakeRotationFromAxes(ConvertDirection(CurrentPortal, TargetPortal, X_Axes),
 													ConvertDirection(CurrentPortal, TargetPortal, Y_Axes),
-													ConvertDirection(CurrentPortal, TargetPortal, Z_Axes));;
+													ConvertDirection(CurrentPortal, TargetPortal, Z_Axes));
 }
 
 FVector ACorePortal::ConvertDirection(AActor * CurrentPortal, AActor * TargetPortal, FVector Direction)
@@ -190,8 +163,6 @@ FVector ACorePortal::ConvertVelocity(AActor * CurrentActor, AActor * TargetActor
 {
 	return ConvertDirection(CurrentActor, TargetActor, Velocity.GetSafeNormal()) * Velocity.Size();
 }
-
-
 
 
 		/* Teleport Overlapped Actors */
@@ -298,20 +269,5 @@ void ACorePortal::ChangePlayerControlRotation(AActor * ActorToTeleport)
 void ACorePortal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (IsActive())
-	{
-		FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
-		if (IsPointInsideBox(CameraLocation, PortalTrigger))
-		{
-			SetScaleVertexParam(1.0f);
-		}
-		if (IsPointInsideBox(CameraLocation, PortalTrigger) && 
-			IsPointCrossingPortal(CameraLocation, PortalRootComponent->GetComponentLocation(), PortalRootComponent->GetForwardVector()))
-		{
-			// Cut this frame
-			UGameplayStatics::GetPlayerCameraManager(this, 0)->SetGameCameraCutThisFrame();
-			ACorePlayerController* PC = Cast<ACorePlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-			PC->PortalManager->RequestTeleportByPortal(this, UGameplayStatics::GetPlayerPawn(this, 0));
-		}
-	}
+	
 }
