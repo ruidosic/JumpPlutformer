@@ -36,6 +36,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Simple Portal")
 	void SetMeshSurfaceSize(FVector Value);
 
+	UFUNCTION()
+	void PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -70,4 +73,6 @@ private:
 	bool IsUpdateSceneCapture();
 	void UpdateSceneCaptureTransform();
 	void UpdateTargetTexture();
+
+
 };

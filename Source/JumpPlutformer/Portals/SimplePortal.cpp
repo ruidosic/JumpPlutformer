@@ -15,7 +15,6 @@ ASimplePortal::ASimplePortal()
 {
 
 	PrimaryActorTick.bCanEverTick = true;
-
 	InitMeshes();
 	InitSceneCapture();
 }
@@ -24,9 +23,11 @@ void ASimplePortal::InitMeshes()
 {
 	PortalMesh->SetupAttachment(GetRootComponent());
 	PortalMesh->SetRelativeScale3D(MeshSurfaceSize);
+	PortalMesh->SetupAttachment(PortalRootComponent);
 
 	FrameMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FrameMesh"));
 	FrameMesh->SetRelativeScale3D(MeshSurfaceSize * 0.01f);
+	FrameMesh->SetupAttachment(PortalRootComponent);
 }
 
 void ASimplePortal::InitSceneCapture()
@@ -92,6 +93,8 @@ void ASimplePortal::SetMeshSurfaceSize(FVector Value)
 void ASimplePortal::BeginPlay()
 {
 	Super::BeginPlay();
+
+	PortalMesh->OnComponentBeginOverlap.AddDynamic(this, &ASimplePortal::PortalBeginOverlap);
 
 	CorePlayerController = Cast<ACorePlayerController>(PlayerController);
 
@@ -189,6 +192,15 @@ void ASimplePortal::UpdateTargetTexture()
 	//	//Say Cheeeeese !
 
 	SceneCapture->CaptureScene();
+}
+
+void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+	if (OtherActor && IsPlayerLookTowardPortal(this) && IsVelocityDirectTowardPortal(OtherActor, this))
+	{
+		TeleportActor(OtherActor);
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Overlap"));
 }
 
 

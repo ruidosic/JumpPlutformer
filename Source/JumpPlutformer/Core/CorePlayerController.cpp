@@ -3,7 +3,7 @@
 
 #include "CorePlayerController.h"
 #include "Engine/World.h"
-#include "Core/PortalManager.h"
+#include "Portals/PortalManager.h"
 #include "SceneView.h"
 #include "Engine/LocalPlayer.h"
 

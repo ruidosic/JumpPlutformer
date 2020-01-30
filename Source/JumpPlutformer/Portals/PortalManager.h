@@ -44,17 +44,10 @@ public:
 
 	void ChangeSceneCaptureLocation(AAdvancedPortal * Portal, AActor * Target);
 
-	//Accessor for Debug purpose
-	UTexture* GetPortalTexture();
-
-	//Accessor for Debug purpose
-	FTransform GetCameraTransform();
 
 protected:
 	virtual void BeginPlay() override;
 
-public:	
-	virtual void Tick(float DeltaTime) override;
 
 private:
 	//Function to create the Portal render target
@@ -63,7 +56,6 @@ private:
 	UPROPERTY()
 	USceneCaptureComponent2D* SceneCapture;
 
-	//Custom class, can be replaced by a "UCanvasRenderTarget2D" instead
 	UPROPERTY()
 	UCanvasRenderTarget2D*	PortalTexture;
 

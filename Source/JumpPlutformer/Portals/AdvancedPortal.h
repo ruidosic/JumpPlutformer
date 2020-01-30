@@ -40,8 +40,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Portal")
 	UBoxComponent* PortalTrigger;
 
-	UPROPERTY(BlueprintReadOnly)
-	USceneComponent* PortalRootComponent;
 
 private:
 

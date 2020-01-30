@@ -6,17 +6,11 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Core/CorePlayerController.h"
-#include "Core/PortalManager.h"
+#include "Portals/PortalManager.h"
 
 AAdvancedPortal::AAdvancedPortal()
 {
-	RootComponent->Mobility = EComponentMobility::Static;
-
-	PortalRootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PortalRootComponent"));
-	PortalRootComponent->SetupAttachment(GetRootComponent());
-	PortalRootComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
-	PortalRootComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-	PortalRootComponent->Mobility = EComponentMobility::Movable;
+	PrimaryActorTick.bCanEverTick = true;
 
 	PortalTrigger = CreateDefaultSubobject<UBoxComponent>("PortalCollision");
 	PortalTrigger->SetupAttachment(RootComponent);
@@ -49,7 +43,6 @@ void AAdvancedPortal::BeginPlay()
 
 /* Portal Trigger Begin Overlpp */
 
-
 void AAdvancedPortal::OnPortalTriggerOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
 	ActorToTeleport = OtherActor;
@@ -60,9 +53,10 @@ void AAdvancedPortal::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	SetScaleVertexParam(0);
+
 	if (IsActive())
 	{
-		FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+		FVector CameraLocation = PlayerCameraManager->GetCameraLocation();
 		if (IsPointInsideBox(CameraLocation, PortalTrigger))
 		{
 			SetScaleVertexParam(1.0f);
@@ -71,8 +65,8 @@ void AAdvancedPortal::Tick(float DeltaTime)
 			IsPointCrossingPortal(CameraLocation, PortalRootComponent->GetComponentLocation(), PortalRootComponent->GetForwardVector()))
 		{
 			// Cut this frame
-			UGameplayStatics::GetPlayerCameraManager(this, 0)->SetGameCameraCutThisFrame();
-			ACorePlayerController* PC = Cast<ACorePlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+			PlayerCameraManager->SetGameCameraCutThisFrame();
+			ACorePlayerController* PC = Cast<ACorePlayerController>(PlayerController);
 			if (ActorToTeleport)
 				PC->PortalManager->RequestTeleportByPortal(this, ActorToTeleport);
 		}
@@ -82,7 +76,7 @@ void AAdvancedPortal::Tick(float DeltaTime)
 
 void AAdvancedPortal::SwitchScaleVertex()
 {
-	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
+	FVector CameraLocation = PlayerCameraManager->GetCameraLocation();
 	if (IsPointInsideBox(CameraLocation, PortalTrigger))
 	{
 		SetScaleVertexParam(1);

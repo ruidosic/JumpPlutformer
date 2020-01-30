@@ -4,7 +4,7 @@
 #include "CoreMainCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Core/CorePlayerController.h"
-#include "Core/PortalManager.h"
+#include "Portals/PortalManager.h"
 
 
 ACoreMainCharacter::ACoreMainCharacter()
@@ -24,6 +24,10 @@ void ACoreMainCharacter::BeginPlay()
 }
 
 
+
+void ACoreMainCharacter::OnLandedRotation_Implementation(AActor * CurrentPortal, AActor * TargetPortal)
+{
+}
 
 void ACoreMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

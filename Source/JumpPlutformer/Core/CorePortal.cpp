@@ -11,14 +11,24 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Core/CorePlayerController.h"
-#include "Core/PortalManager.h"
+#include "Portals/PortalInterface.h"
+#include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 ACorePortal::ACorePortal()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	PortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PortalMesh"));
+
+	RootComponent->Mobility = EComponentMobility::Static;
+
+	PortalRootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("PortalRootComponent"));
+	PortalRootComponent->SetupAttachment(GetRootComponent());
+	PortalRootComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
+	PortalRootComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	PortalRootComponent->Mobility = EComponentMobility::Movable;
 
 }
 
@@ -29,18 +39,44 @@ void ACorePortal::BeginPlay()
 	PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 	PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+
+	SetPortalMeshMaterial();
 }
 
-void ACorePortal::ClearRTT_Implementation()
+void ACorePortal::SetPortalMeshMaterial()
 {
+	if (M_PortalMesh)
+	{
+		DM_PortalMesh = PortalMesh->CreateDynamicMaterialInstance(0, M_PortalMesh, NAME_None);
+		if (DM_PortalMesh)
+		{
+			PortalMesh->SetMaterial(0, DM_PortalMesh);
+		}
+	}
 }
 
-void ACorePortal::SetRTT_Implementation(UTexture* RenderTexture)
+void ACorePortal::ClearRTT()
 {
+	if (DM_PortalMesh)
+	{
+		DM_PortalMesh->SetTextureParameterValue(FName("TextureRT"), nullptr);
+	}
 }
 
-void ACorePortal::SetScaleVertexParam_Implementation(float Value)
+void ACorePortal::SetRTT(UTexture* RenderTexture)
 {
+	if (RenderTexture && DM_PortalMesh)
+	{
+		DM_PortalMesh->SetTextureParameterValue(FName("TextureRT"), RenderTexture);
+	}
+}
+
+void ACorePortal::SetScaleVertexParam(float Value)
+{
+	if (DM_PortalMesh)
+	{
+		DM_PortalMesh->SetScalarParameterValue(FName("ScaleVertex"), Value);
+	}
 }
 
 AActor * ACorePortal::GetTarget()
@@ -128,6 +164,11 @@ bool ACorePortal::IsPlayerLookTowardPortal(AActor * CurrentPortal)
 		return false;
 }
 
+bool ACorePortal::IsVelocityDirectTowardPortal(AActor * ActorToTeleport, AActor * CurrentPortal)
+{
+	return FVector::DotProduct(ActorToTeleport->GetVelocity().GetSafeNormal(), CurrentPortal->GetActorForwardVector()) < 0;
+}
+
 		/* Сonverting Vectors Spaces */
 
 
@@ -188,6 +229,11 @@ void ACorePortal::TeleportActor(AActor * ActorToTeleport)
 	ChangePlayerVelocity(ActorToTeleport);
 
 	ChangePlayerControlRotation(ActorToTeleport);
+
+	if (ActorToTeleport->Implements<UPortalInterface>())
+	{
+		IPortalInterface::Execute_OnLandedRotation(ActorToTeleport, this, Target);
+	}
 
 	LastPosition = NewLocation;
 }
@@ -262,12 +308,4 @@ void ACorePortal::ChangePlayerControlRotation(AActor * ActorToTeleport)
 			}
 		}
 	}
-}
-
-
-
-void ACorePortal::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	
 }

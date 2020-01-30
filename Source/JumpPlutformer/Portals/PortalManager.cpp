@@ -25,6 +25,12 @@ APortalManager::APortalManager()
 }
 
 
+void APortalManager::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
+
 void APortalManager::RequestTeleportByPortal(AAdvancedPortal * Portal, AActor * TargetToTeleport)
 {
 	if (Portal != nullptr && TargetToTeleport != nullptr)
@@ -61,7 +67,7 @@ void APortalManager::Init()
 	SceneCapture = NewObject<USceneCaptureComponent2D>(this, USceneCaptureComponent2D::StaticClass(), *FString("PortalSceneCapture"));
 
 	SceneCapture->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-	SceneCapture->RegisterComponent();
+	//SceneCapture->RegisterComponent();
 
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
@@ -121,11 +127,11 @@ void APortalManager::GeneratePortalTexture()
 	PreviousScreenSizeY = CurrentSizeY;
 
 	//Cleanup existing RTT
-	if (PortalTexture && PortalTexture->IsValidLowLevel())
-	{
-		PortalTexture->BeginDestroy();
-		GEngine->ForceGarbageCollection();
-	}
+	//if (PortalTexture && PortalTexture->IsValidLowLevel())
+	//{
+	//	PortalTexture->BeginDestroy();
+	//	GEngine->ForceGarbageCollection();
+	//}
 
 	//Create new RTT
 	PortalTexture = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(this, UCanvasRenderTarget2D::StaticClass(), CurrentSizeX, CurrentSizeY);
@@ -279,45 +285,6 @@ void APortalManager::ChangeSceneCaptureLocation(AAdvancedPortal * Portal, AActor
 	}
 }
 
-UTexture * APortalManager::GetPortalTexture()
-{
-	//Portal Texture is a custom component class that embed a UCanvasRenderTraget2D
-	//The GetTexture() simply returns the RenderTarget contained in that class.
-	//IsValidLowLevel() is used here as a way to ensure the Texture has not been destroyed or garbage collected.
-	
-	if (PortalTexture && PortalTexture->IsValidLowLevel())
-	{
-			return PortalTexture;
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-FTransform APortalManager::GetCameraTransform()
-{
-	if (SceneCapture)
-	{
-		return SceneCapture->GetComponentTransform();
-	}
-	else
-	{
-		return FTransform();
-	}
-}
-
-void APortalManager::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-
-void APortalManager::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
 
 
 

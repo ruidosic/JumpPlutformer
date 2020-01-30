@@ -9,6 +9,8 @@ class UTexture;
 class UBoxComponent;
 class UStaticMeshComponent;
 class APortalManager;
+class UMaterialInterface;
+class UMaterialInstanceDynamic;
 
 UCLASS()
 class JUMPPLUTFORMER_API ACorePortal : public AActor
@@ -23,13 +25,12 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	virtual void Tick(float DeltaTime) override;
 
 	//Render Target to use  to display the portal
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Portal")
+	UFUNCTION()
 	void ClearRTT();
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Portal")
+	UFUNCTION()
 	void SetRTT(UTexture* RenderTexture);
 
 	//Target of where the portal is looking
@@ -53,12 +54,18 @@ public:
 protected:
 
 	//Change Scale Vertex Param of Dynamic Material
-	UFUNCTION(BlueprintNativeEvent, Category = "Portal")
-	void SetScaleVertexParam(float Value);
-
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Portal")
 	UStaticMeshComponent* PortalMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Portal")
+	UMaterialInterface* M_PortalMesh;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* DM_PortalMesh;
+
+	UPROPERTY(BlueprintReadOnly)
+	USceneComponent* PortalRootComponent;
 
 	UPROPERTY()
 	AActor* Target;
@@ -80,14 +87,17 @@ protected:
 	bool IsPointCrossingPortal(FVector Point, FVector PortalLocation, FVector PortalNormal);
 	bool IsPointInsideBox(FVector Point, UBoxComponent* Box);
 	bool IsPlayerLookTowardPortal(AActor* CurrentPortal);
+	bool IsVelocityDirectTowardPortal(AActor* ActorToTeleport, AActor* CurrentPortal);
+
+	void SetScaleVertexParam(float Value);
 
 private:
+
+	void SetPortalMeshMaterial();
 
 	//Used for Tracking movement of a point
 	FVector LastPosition;
 	bool LastInFront;
-
-	// Check if object can teleport then return true
 
 
 	// After Teleportation Changes
