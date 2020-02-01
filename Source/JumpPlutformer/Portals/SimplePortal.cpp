@@ -196,11 +196,30 @@ void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AAc
 {
 	if (OtherActor == nullptr)
 		return;
-	if (IsVelocityDirectTowardPortal(OtherActor, this) && IsCrossPortalNextFrame(OtherActor, this))
+
+	// for physics object logic
+
+	if (OtherActor->FindComponentByClass<UStaticMeshComponent>()->IsSimulatingPhysics())
 	{
-		PlayerCameraManager->SetGameCameraCutThisFrame();
-		TeleportActor(OtherActor);
-		UE_LOG(LogTemp, Warning, TEXT("Overlap"));
+		UStaticMeshComponent* PhysicsMesh = OtherActor->FindComponentByClass<UStaticMeshComponent>();
+		if (!PhysicsMesh)
+			return;
+		FVector Velocity = PhysicsMesh->GetComponentVelocity();
+		if (FVector::DotProduct(Velocity.GetSafeNormal(), GetActorForwardVector()) < 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Overlap Physics Object"));
+			TeleportActor(OtherActor);
+		}
+	}
+	// for player pawn
+	else
+	{
+		if (IsVelocityDirectTowardPortal(OtherActor, this) && IsCrossPortalNextFrame(OtherActor, this))
+		{
+			PlayerCameraManager->SetGameCameraCutThisFrame();
+			TeleportActor(OtherActor);
+			UE_LOG(LogTemp, Warning, TEXT("Overlap"));
+		}
 	}
 }
 

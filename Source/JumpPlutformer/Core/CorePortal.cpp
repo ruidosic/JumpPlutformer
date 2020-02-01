@@ -29,7 +29,6 @@ ACorePortal::ACorePortal()
 	PortalRootComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 0.0f));
 	PortalRootComponent->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	PortalRootComponent->Mobility = EComponentMobility::Movable;
-
 }
 
 void ACorePortal::BeginPlay()
@@ -252,13 +251,16 @@ void ACorePortal::TeleportActor(AActor * TeleportActor)
 	//Compute and apply new location
 	FVector NewLocation = ConvertLocation(this, Target, TeleportActor->GetActorLocation());
 	TeleportActor->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
-
+	UE_LOG(LogTemp, Warning, TEXT("Overlap Physics Object"));
+	
 	//Compute and apply new rotation
 	FRotator NewRotation = ConvertRotation(this, Target, TeleportActor->GetActorRotation());
 	TeleportActor->SetActorRotation(NewRotation, ETeleportType::TeleportPhysics);
-
-	ChangeComponentsVelocity(TeleportActor);
+/*
+	ChangeComponentsVelocity(TeleportActor);*/
 	
+	ChangePhysicsObjectRotationAndLocation(TeleportActor);
+
 	ChangePlayerVelocity(TeleportActor);
 
 	ChangePlayerControlRotation(TeleportActor);
@@ -290,14 +292,13 @@ void ACorePortal::ChangePlayerVelocity(AActor * TeleportActor)
 		FVector NewVelocity = ConvertVelocity(this, Target, SavedVelocity) + Target->GetActorForwardVector() * 40;
 
 		PlayerCharacter->GetMovementComponent()->Velocity = NewVelocity;
-
 	}
 }
 
 void ACorePortal::ChangeComponentsVelocity(AActor * TeleportActor)
 {
 	// Changing Velocity for Actor Components
-	TArray<UActorComponent*> ActorComps = TeleportActor->GetComponentsByClass(TSubclassOf<UActorComponent>());
+	TArray<UActorComponent*> ActorComps = TeleportActor->GetComponentsByClass(UActorComponent::StaticClass());
 	if (!ActorComps.IsValidIndex(0))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Components for portal's overlap"));
@@ -313,7 +314,7 @@ void ACorePortal::ChangeComponentsVelocity(AActor * TeleportActor)
 
 			if (NewVelocity.SizeSquared() > 1)			//we moving
 			{
-				PrimitiveComp->SetAllPhysicsLinearVelocity(NewVelocity + Target->GetActorForwardVector() * 40, false);
+				PrimitiveComp->SetAllPhysicsLinearVelocity(NewVelocity, false);
 			}
 
 			// Change Angular Physics Velocity
@@ -340,11 +341,32 @@ void ACorePortal::ChangePlayerControlRotation(AActor * TeleportActor)
 			//If we are teleporting a character we need to
 			//update its controller as well and reapply its velocity
 			//-------------------------------
+			
 			if (PC)
 			{
 				FRotator NewRotation = ConvertRotation(this, Target, PC->GetControlRotation());
 				PC->SetControlRotation(NewRotation);
 			}
 		}
+	}
+}
+
+void ACorePortal::ChangePhysicsObjectRotationAndLocation(AActor * TeleportActor)
+{
+	if (TeleportActor->FindComponentByClass<UStaticMeshComponent>()->IsSimulatingPhysics())
+	{
+		UStaticMeshComponent* PhysicsObject = TeleportActor->FindComponentByClass<UStaticMeshComponent>();
+		
+		if (!PhysicsObject)
+			return;
+		
+		FHitResult HitResult;
+
+		FVector NewLocation = ConvertLocation(this, Target, PhysicsObject->GetComponentLocation());
+		PhysicsObject->SetWorldLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
+
+		//Compute and apply new rotation
+		FRotator NewRotation = ConvertRotation(this, Target, PhysicsObject->GetComponentRotation());
+		PhysicsObject->SetWorldRotation(FQuat(NewRotation), false, &HitResult, ETeleportType::TeleportPhysics);
 	}
 }

@@ -115,5 +115,5 @@ private:
 	void ChangePlayerVelocity(AActor* TeleportActor);
 	void ChangeComponentsVelocity(AActor* TeleportActor);
 	void ChangePlayerControlRotation(AActor* TeleportActor);
-
+	void ChangePhysicsObjectRotationAndLocation(AActor* TeleportActor);
 };
