@@ -21,7 +21,6 @@ ASimplePortal::ASimplePortal()
 
 void ASimplePortal::InitMeshes()
 {
-	PortalMesh->SetupAttachment(GetRootComponent());
 	PortalMesh->SetRelativeScale3D(MeshSurfaceSize);
 	PortalMesh->SetupAttachment(PortalRootComponent);
 
@@ -33,8 +32,7 @@ void ASimplePortal::InitMeshes()
 void ASimplePortal::InitSceneCapture()
 {
 	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCapture"));
-	SceneCapture->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-
+	SceneCapture->SetupAttachment(PortalRootComponent);
 	SceneCapture->bCaptureEveryFrame = false;
 	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->LODDistanceFactor = 3; //Force bigger LODs for faster computations
@@ -94,14 +92,14 @@ void ASimplePortal::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PortalMesh->OnComponentBeginOverlap.AddDynamic(this, &ASimplePortal::PortalBeginOverlap);
-
 	CorePlayerController = Cast<ACorePlayerController>(PlayerController);
 
 	if (IsRenderEnable())
 	{
 		GeneratePortalTexture();
 	}
+
+	PortalMesh->OnComponentBeginOverlap.AddDynamic(this, &ASimplePortal::PortalBeginOverlap);
 }
 
 void ASimplePortal::GeneratePortalTexture()
@@ -196,11 +194,14 @@ void ASimplePortal::UpdateTargetTexture()
 
 void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	if (OtherActor && IsPlayerLookTowardPortal(this) && IsVelocityDirectTowardPortal(OtherActor, this))
+	if (OtherActor == nullptr)
+		return;
+	if (IsVelocityDirectTowardPortal(OtherActor, this) && IsCrossPortalNextFrame(OtherActor, this))
 	{
+		PlayerCameraManager->SetGameCameraCutThisFrame();
 		TeleportActor(OtherActor);
+		UE_LOG(LogTemp, Warning, TEXT("Overlap"));
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Overlap"));
 }
 
 

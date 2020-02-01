@@ -27,22 +27,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Portal")
 	void SwitchScaleVertex();
 
-	//Status of the Portal (being visualized by the player or not)
-	UFUNCTION(BlueprintPure, Category = "Portal")
-	bool IsActive();
-
-	UFUNCTION(BlueprintCallable, Category = "Portal")
-	void SetActive(bool NewActive);
-
 protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Portal")
 	UBoxComponent* PortalTrigger;
-
-
-private:
-
-	bool bIsActive = false;
 
 };

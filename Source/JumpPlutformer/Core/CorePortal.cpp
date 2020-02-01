@@ -89,6 +89,16 @@ void ACorePortal::SetTarget(AActor * NewTarget)
 	Target = NewTarget;
 }
 
+bool ACorePortal::IsActive()
+{
+	return bIsActive;
+}
+
+void ACorePortal::SetActive(bool NewActive)
+{
+	bIsActive = NewActive;
+}
+
 
 		/* Сalculations about the relationship
 			 between point and portal */
@@ -155,6 +165,8 @@ bool ACorePortal::IsPointInsideBox(FVector Point, UBoxComponent * Box)
 
 bool ACorePortal::IsPlayerLookTowardPortal(AActor * CurrentPortal)
 {
+	if (!CurrentPortal)
+		return false;
 	FVector CameraLocation = UGameplayStatics::GetPlayerCameraManager(this, 0)->GetCameraLocation();
 	FVector PlayerLocation = UGameplayStatics::GetPlayerPawn(this, 0)->GetActorLocation();
 	FVector ViewDirection = CameraLocation - PlayerLocation;
@@ -164,9 +176,22 @@ bool ACorePortal::IsPlayerLookTowardPortal(AActor * CurrentPortal)
 		return false;
 }
 
-bool ACorePortal::IsVelocityDirectTowardPortal(AActor * ActorToTeleport, AActor * CurrentPortal)
+bool ACorePortal::IsVelocityDirectTowardPortal(AActor * TeleportActor, AActor * CurrentPortal)
 {
-	return FVector::DotProduct(ActorToTeleport->GetVelocity().GetSafeNormal(), CurrentPortal->GetActorForwardVector()) < 0;
+	if (!TeleportActor || !CurrentPortal)
+		return false;
+	return FVector::DotProduct(TeleportActor->GetVelocity().GetSafeNormal(), CurrentPortal->GetActorForwardVector()) < 0;
+}
+
+bool ACorePortal::IsCrossPortalNextFrame(AActor * TeleportActor, AActor * CurrentPortal)
+{
+	FVector DeltaLocation = TeleportActor->GetVelocity() * UGameplayStatics::GetWorldDeltaSeconds(this);
+	FVector NextFrameLocation = DeltaLocation + TeleportActor->GetActorLocation();
+	FVector Direction = NextFrameLocation - CurrentPortal->GetActorLocation();
+	Direction = Direction.GetSafeNormal();
+	float Result = FVector::DotProduct(Direction, CurrentPortal->GetActorForwardVector());
+	UE_LOG(LogTemp, Warning, TEXT("Portal Forward %f"), Result);
+	return FVector::DotProduct(Direction, CurrentPortal->GetActorForwardVector()) > 0;
 }
 
 		/* Сonverting Vectors Spaces */
@@ -174,6 +199,8 @@ bool ACorePortal::IsVelocityDirectTowardPortal(AActor * ActorToTeleport, AActor 
 
 FVector ACorePortal::ConvertLocation(AActor * CurrentPortal, AActor * TargetPortal, FVector Location)
 {
+	if (!TargetPortal || !CurrentPortal)
+		return FVector::ZeroVector;
 	FTransform CurrentPortalTransform = CurrentPortal->GetActorTransform();
 	FVector InversedScale = FVector(-1 * CurrentPortalTransform.GetScale3D().X,
 									-1 * CurrentPortalTransform.GetScale3D().Y,
@@ -185,6 +212,8 @@ FVector ACorePortal::ConvertLocation(AActor * CurrentPortal, AActor * TargetPort
 
 FRotator ACorePortal::ConvertRotation(AActor * CurrentPortal, AActor * TargetPortal, FRotator Rotation)
 {
+	if (!TargetPortal || !CurrentPortal)
+		return FRotator::ZeroRotator;
 	FVector X_Axes, Y_Axes, Z_Axes;
 	UKismetMathLibrary::GetAxes(Rotation, X_Axes, Y_Axes, Z_Axes);
 	return 	UKismetMathLibrary::MakeRotationFromAxes(ConvertDirection(CurrentPortal, TargetPortal, X_Axes),
@@ -194,6 +223,8 @@ FRotator ACorePortal::ConvertRotation(AActor * CurrentPortal, AActor * TargetPor
 
 FVector ACorePortal::ConvertDirection(AActor * CurrentPortal, AActor * TargetPortal, FVector Direction)
 {
+	if (!TargetPortal || !CurrentPortal)
+		return FVector::ZeroVector;
 	FVector CurrentPortalLocalDirection = UKismetMathLibrary::InverseTransformDirection(CurrentPortal->GetActorTransform(), Direction);
 	FVector CPLD_MirroredByX = UKismetMathLibrary::MirrorVectorByNormal(CurrentPortalLocalDirection, FVector(1, 0, 0));
 	FVector CPLD_MirroredByXY = UKismetMathLibrary::MirrorVectorByNormal(CPLD_MirroredByX, FVector(0, 1, 0));
@@ -202,6 +233,8 @@ FVector ACorePortal::ConvertDirection(AActor * CurrentPortal, AActor * TargetPor
 
 FVector ACorePortal::ConvertVelocity(AActor * CurrentActor, AActor * TargetActor, FVector Velocity)
 {
+	if (!TargetActor || !CurrentActor)
+		return FVector::ZeroVector;
 	return ConvertDirection(CurrentActor, TargetActor, Velocity.GetSafeNormal()) * Velocity.Size();
 }
 
@@ -209,30 +242,30 @@ FVector ACorePortal::ConvertVelocity(AActor * CurrentActor, AActor * TargetActor
 		/* Teleport Overlapped Actors */
 
 
-void ACorePortal::TeleportActor(AActor * ActorToTeleport)
+void ACorePortal::TeleportActor(AActor * TeleportActor)
 {
-	if (ActorToTeleport == nullptr || Target == nullptr || ActorToTeleport == this)
+	if (TeleportActor == nullptr || Target == nullptr || TeleportActor == this)
 		return;
 
 	FHitResult HitResult;
 
 	//Compute and apply new location
-	FVector NewLocation = ConvertLocation(this, Target, ActorToTeleport->GetActorLocation());
-	ActorToTeleport->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
+	FVector NewLocation = ConvertLocation(this, Target, TeleportActor->GetActorLocation());
+	TeleportActor->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
 
 	//Compute and apply new rotation
-	FRotator NewRotation = ConvertRotation(this, Target, ActorToTeleport->GetActorRotation());
-	ActorToTeleport->SetActorRotation(NewRotation);
+	FRotator NewRotation = ConvertRotation(this, Target, TeleportActor->GetActorRotation());
+	TeleportActor->SetActorRotation(NewRotation, ETeleportType::TeleportPhysics);
 
-	ChangeComponentsVelocity(ActorToTeleport);
+	ChangeComponentsVelocity(TeleportActor);
 	
-	ChangePlayerVelocity(ActorToTeleport);
+	ChangePlayerVelocity(TeleportActor);
 
-	ChangePlayerControlRotation(ActorToTeleport);
+	ChangePlayerControlRotation(TeleportActor);
 
-	if (ActorToTeleport->Implements<UPortalInterface>())
+	if (TeleportActor->Implements<UPortalInterface>())
 	{
-		IPortalInterface::Execute_OnLandedRotation(ActorToTeleport, this, Target);
+		IPortalInterface::Execute_OnLandedRotation(TeleportActor, this, Target);
 	}
 
 	LastPosition = NewLocation;
@@ -242,28 +275,34 @@ void ACorePortal::TeleportActor(AActor * ActorToTeleport)
 		/* Сhange Different Properties after Teleport */
 
 
-void ACorePortal::ChangePlayerVelocity(AActor * ActorToTeleport)
+void ACorePortal::ChangePlayerVelocity(AActor * TeleportActor)
 {
-	if (Cast<APawn>(ActorToTeleport)) 	// Changing Velocity for Pawn
+	if (Cast<APawn>(TeleportActor)) 	// Changing Velocity for Pawn
 	{
 		//Retrieve and save Velocity
 		//(from the Movement Component)
 		FVector SavedVelocity = FVector::ZeroVector;
 
-		APawn* PlayerCharacter = Cast<APawn>(ActorToTeleport);
+		APawn* PlayerCharacter = Cast<APawn>(TeleportActor);
 
 		SavedVelocity = PlayerCharacter->GetVelocity();
 
-		FVector NewVelocity = ConvertVelocity(this, Target, SavedVelocity);
+		FVector NewVelocity = ConvertVelocity(this, Target, SavedVelocity) + Target->GetActorForwardVector() * 40;
 
 		PlayerCharacter->GetMovementComponent()->Velocity = NewVelocity;
+
 	}
 }
 
-void ACorePortal::ChangeComponentsVelocity(AActor * ActorToTeleport)
+void ACorePortal::ChangeComponentsVelocity(AActor * TeleportActor)
 {
 	// Changing Velocity for Actor Components
-	TArray<UActorComponent*> ActorComps = ActorToTeleport->GetComponentsByClass(TSubclassOf<UActorComponent>());
+	TArray<UActorComponent*> ActorComps = TeleportActor->GetComponentsByClass(TSubclassOf<UActorComponent>());
+	if (!ActorComps.IsValidIndex(0))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Components for portal's overlap"));
+		return;
+	}
 	for (UActorComponent* ActorComp : ActorComps)
 	{
 		UPrimitiveComponent* PrimitiveComp = Cast<UPrimitiveComponent>(ActorComp);
@@ -274,7 +313,7 @@ void ACorePortal::ChangeComponentsVelocity(AActor * ActorToTeleport)
 
 			if (NewVelocity.SizeSquared() > 1)			//we moving
 			{
-				PrimitiveComp->SetAllPhysicsLinearVelocity(NewVelocity, false);
+				PrimitiveComp->SetAllPhysicsLinearVelocity(NewVelocity + Target->GetActorForwardVector() * 40, false);
 			}
 
 			// Change Angular Physics Velocity
@@ -288,9 +327,9 @@ void ACorePortal::ChangeComponentsVelocity(AActor * ActorToTeleport)
 	}
 }
 
-void ACorePortal::ChangePlayerControlRotation(AActor * ActorToTeleport)
+void ACorePortal::ChangePlayerControlRotation(AActor * TeleportActor)
 {
-	if (ActorToTeleport == UGameplayStatics::GetPlayerCharacter(this, 0)) // if Actor To Teleport == Player Character 
+	if (TeleportActor == UGameplayStatics::GetPlayerCharacter(this, 0)) // if Actor To Teleport == Player Character 
 	{
 		ACharacter* PlayerCharacter = Cast<ACharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
 		if (PlayerCharacter)

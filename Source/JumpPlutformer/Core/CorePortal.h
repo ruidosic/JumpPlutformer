@@ -40,8 +40,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Portal")
 	void SetTarget(AActor* NewTarget);
 
+	//Status of the Portal (being visualized by the player or not)
+	UFUNCTION(BlueprintPure, Category = "Portal")
+	bool IsActive();
+
 	UFUNCTION(BlueprintCallable, Category = "Portal")
-	virtual void TeleportActor(AActor* ActorToTeleport);
+	void SetActive(bool NewActive);
+
+	UFUNCTION(BlueprintCallable, Category = "Portal")
+	virtual void TeleportActor(AActor* TeleportActor);
 
 
 	//Math Calculation Functions about Converting Spaces
@@ -87,11 +94,14 @@ protected:
 	bool IsPointCrossingPortal(FVector Point, FVector PortalLocation, FVector PortalNormal);
 	bool IsPointInsideBox(FVector Point, UBoxComponent* Box);
 	bool IsPlayerLookTowardPortal(AActor* CurrentPortal);
-	bool IsVelocityDirectTowardPortal(AActor* ActorToTeleport, AActor* CurrentPortal);
+	bool IsVelocityDirectTowardPortal(AActor* TeleportActor, AActor* CurrentPortal);
+	bool IsCrossPortalNextFrame(AActor* TeleportActor, AActor* CurrentPortal);
 
 	void SetScaleVertexParam(float Value);
 
 private:
+
+	bool bIsActive = false;
 
 	void SetPortalMeshMaterial();
 
@@ -100,9 +110,10 @@ private:
 	bool LastInFront;
 
 
+
 	// After Teleportation Changes
-	void ChangePlayerVelocity(AActor* ActorToTeleport);
-	void ChangeComponentsVelocity(AActor* ActorToTeleport);
-	void ChangePlayerControlRotation(AActor* ActorToTeleport);
+	void ChangePlayerVelocity(AActor* TeleportActor);
+	void ChangeComponentsVelocity(AActor* TeleportActor);
+	void ChangePlayerControlRotation(AActor* TeleportActor);
 
 };

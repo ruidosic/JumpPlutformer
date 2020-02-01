@@ -233,7 +233,7 @@ void APortalManager::UpdateCapture(AAdvancedPortal * Portal)
 			//SceneCapture and the Target of the portal
 			//-------------------------------
 			SceneCapture->ClipPlaneNormal = Target->GetActorForwardVector();
-			SceneCapture->ClipPlaneBase = Target->GetActorLocation(); //Offset to avoid visible pixel border
+			SceneCapture->ClipPlaneBase = Target->GetActorLocation(); 
 		
 			ChangeSceneCaptureLocation(Portal, Target);
 			ChangeSceneCaptureRotation(Portal, Target);

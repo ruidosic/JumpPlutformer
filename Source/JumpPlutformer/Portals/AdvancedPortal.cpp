@@ -22,16 +22,6 @@ AAdvancedPortal::AAdvancedPortal()
 }
 
 
-bool AAdvancedPortal::IsActive()
-{
-	return bIsActive;
-}
-
-void AAdvancedPortal::SetActive(bool NewActive)
-{
-	bIsActive = NewActive;
-}
-
 
 void AAdvancedPortal::BeginPlay()
 {
