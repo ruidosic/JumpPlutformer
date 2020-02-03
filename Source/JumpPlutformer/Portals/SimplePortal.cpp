@@ -218,7 +218,6 @@ void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AAc
 		{
 			PlayerCameraManager->SetGameCameraCutThisFrame();
 			TeleportActor(OtherActor);
-			UE_LOG(LogTemp, Warning, TEXT("Overlap"));
 		}
 	}
 }
