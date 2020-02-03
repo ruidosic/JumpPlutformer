@@ -49,6 +49,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "SceneCapture")
 	USceneCaptureComponent2D* SceneCapture;
 
+
 private:
 
 	bool bOpen = true;

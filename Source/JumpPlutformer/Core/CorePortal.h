@@ -55,7 +55,7 @@ public:
 	FVector ConvertLocation(AActor* CurrentPortal, AActor* TargetPortal, FVector Location);
 	FRotator ConvertRotation(AActor* CurrentPortal, AActor* TargetPortal, FRotator Rotation);
 	FVector ConvertDirection(AActor* CurrentPortal, AActor* TargetPortal, FVector Direction);
-	FVector ConvertVelocity(AActor * CurrentActor, AActor * TargetActor, FVector Velocity);
+	FVector ConvertVelocity(AActor* CurrentActor, AActor * TargetActor, FVector Velocity);
 	
 
 protected:

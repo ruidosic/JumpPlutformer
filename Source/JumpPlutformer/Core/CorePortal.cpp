@@ -251,13 +251,12 @@ void ACorePortal::TeleportActor(AActor * TeleportActor)
 	//Compute and apply new location
 	FVector NewLocation = ConvertLocation(this, Target, TeleportActor->GetActorLocation());
 	TeleportActor->SetActorLocation(NewLocation, false, &HitResult, ETeleportType::TeleportPhysics);
-	UE_LOG(LogTemp, Warning, TEXT("Overlap Physics Object"));
 	
 	//Compute and apply new rotation
 	FRotator NewRotation = ConvertRotation(this, Target, TeleportActor->GetActorRotation());
 	TeleportActor->SetActorRotation(NewRotation, ETeleportType::TeleportPhysics);
 
-	//ChangeComponentsVelocity(TeleportActor);
+	ChangeComponentsVelocity(TeleportActor);
 	
 	ChangePhysicsObjectRotationAndLocation(TeleportActor);
 
