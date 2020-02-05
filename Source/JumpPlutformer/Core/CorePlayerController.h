@@ -29,6 +29,8 @@ public:
 
 	FMatrix GetCameraProjectionMatrix();
 
+	FMatrix GenerateCameraProjectionMatrix(float X, float Y, float HalfFOV, float Scale);
+
 private:
 
 	void CreatePortalManager();

@@ -17,6 +17,7 @@ ASimplePortal::ASimplePortal()
 	PrimaryActorTick.bCanEverTick = true;
 	InitMeshes();
 	InitSceneCapture();
+	InitRecSceneCapture();
 }
 
 void ASimplePortal::InitMeshes()
@@ -37,7 +38,7 @@ void ASimplePortal::InitSceneCapture()
 	SceneCapture->bCaptureOnMovement = false;
 	SceneCapture->LODDistanceFactor = 3; //Force bigger LODs for faster computations
 	SceneCapture->TextureTarget = nullptr;
-	SceneCapture->bEnableClipPlane = true;
+	SceneCapture->bEnableClipPlane = true; 
 	SceneCapture->bUseCustomProjectionMatrix = true;
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorSceneDepth;
 
@@ -62,19 +63,42 @@ void ASimplePortal::InitSceneCapture()
 	SceneCapture->PostProcessSettings = CaptureSettings;
 }
 
-bool ASimplePortal::IsOpen()
+void ASimplePortal::InitRecSceneCapture()
 {
-	return bOpen;
+	RecSceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("RecSceneCapture"));
+	RecSceneCapture->SetupAttachment(PortalRootComponent);
+	RecSceneCapture->bCaptureEveryFrame = false;
+	RecSceneCapture->bCaptureOnMovement = false;
+	RecSceneCapture->LODDistanceFactor = 5; //Force bigger LODs for faster computations
+	RecSceneCapture->TextureTarget = nullptr;
+	RecSceneCapture->bEnableClipPlane = true;  
+	RecSceneCapture->bUseCustomProjectionMatrix = true;
+	RecSceneCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorSceneDepth;
+
+	//Setup Post-Process of SceneCapture (optimization : disable Motion Blur and other)
+	FPostProcessSettings CaptureSettings;
+
+	CaptureSettings.bOverride_AmbientOcclusionQuality = true;
+	CaptureSettings.bOverride_MotionBlurAmount = true;
+	CaptureSettings.bOverride_SceneFringeIntensity = true;
+	CaptureSettings.bOverride_GrainIntensity = true;
+	CaptureSettings.bOverride_ScreenSpaceReflectionQuality = true;
+
+	CaptureSettings.AmbientOcclusionQuality = 0.0f; //0=lowest quality..100=maximum quality
+	CaptureSettings.MotionBlurAmount = 0.0f; //0 = disabled
+	CaptureSettings.SceneFringeIntensity = 0.0f; //0 = disabled
+	CaptureSettings.GrainIntensity = 0.0f; //0 = disabled
+	CaptureSettings.ScreenSpaceReflectionQuality = 0.0f; //0 = disabled
+
+	CaptureSettings.bOverride_ScreenPercentage = true;
+	CaptureSettings.ScreenPercentage = 100.0f;
+
+	RecSceneCapture->PostProcessSettings = CaptureSettings;
 }
 
 void ASimplePortal::SetIsOpen(bool Value)
 {
 	bOpen = Value;
-}
-
-bool ASimplePortal::IsRenderEnable()
-{
-	return bRenderEnable;
 }
 
 void ASimplePortal::SetIsRenderEnable(bool Value)
@@ -85,6 +109,16 @@ void ASimplePortal::SetIsRenderEnable(bool Value)
 void ASimplePortal::SetMeshSurfaceSize(FVector Value)
 {
 	MeshSurfaceSize = Value;
+}
+
+void ASimplePortal::SetRenderMipLevels(int Value)
+{
+	RenderMipLevels = Value;
+}
+
+void ASimplePortal::SetRenderMipScaledownSpeed(float Value)
+{
+	RenderMipScaledownSpeed = Value;
 }
 
 
@@ -102,7 +136,7 @@ void ASimplePortal::BeginPlay()
 	PortalMesh->OnComponentBeginOverlap.AddDynamic(this, &ASimplePortal::PortalBeginOverlap);
 }
 
-void ASimplePortal::GeneratePortalTexture()
+void ASimplePortal::GeneratePortalTexture() //tut nado dodelat
 {
 	int32 CurrentSizeX = 1280;
 	int32 CurrentSizeY = 720;
@@ -134,12 +168,27 @@ void ASimplePortal::GeneratePortalTexture()
 	PortalTexture->AddToRoot();
 }
 
+void ASimplePortal::GenerateRenderTargetsByMipMap()
+{
+	for (int i = RenderMipLevels - 1; i > 0; i--)
+	{
+
+	}
+
+}
+
 void ASimplePortal::UpdateSceneCapture()
 {
 	if (IsUpdateSceneCapture())
 	{
 		UpdateSceneCaptureTransform();
-		UpdateTargetTexture();
+		CalcProjectionMatrix();
+		UpdateSceneCaptureTargetTexture();
+		
+		// For Recursion
+		UpdateRecSceneCaptureTransform();
+		CalcRecProjectionMatrix();
+		UpdateRecSceneCaptureTargetTexture();
 	}
 	else
 	{
@@ -160,22 +209,38 @@ bool ASimplePortal::IsUpdateSceneCapture()
 	}
 }
 
+FVector ASimplePortal::UpdateSceneCaptureLocation(USceneCaptureComponent2D * SceneCapture, FVector Location)
+{
+	FVector NewLocation = ConvertLocation(this, Target, Location);
+	SceneCapture->SetWorldLocation(NewLocation);
+	return NewLocation;
+}
+
+FRotator ASimplePortal::UpdateSceneCaptureRotation(USceneCaptureComponent2D * SceneCapture, FRotator Rotation)
+{
+	FRotator NewRotation = ConvertRotation(this, Target, Rotation);
+	SceneCapture->SetWorldRotation(NewRotation);
+	return NewRotation;
+}
+
 void ASimplePortal::UpdateSceneCaptureTransform()
 {
 	if (Target && PlayerCameraManager)
 	{
-		SceneCapture->ClipPlaneBase = GetActorLocation();
+
+		// Changing Transform For Scene Capture
+		SceneCapture->ClipPlaneBase = GetActorLocation()/* + GetActorForwardVector() * ClipPlaneOffset*/;
 		SceneCapture->ClipPlaneNormal = GetActorForwardVector();
+		SceneCapture->FOVAngle = PlayerCameraManager->GetFOVAngle();
 
-		FVector NewLocation = ConvertLocation(this, Target, PlayerCameraManager->GetCameraLocation());
-		SceneCapture->SetWorldLocation(NewLocation);
-
-		FRotator NewRotation = ConvertRotation(this, Target, PlayerCameraManager->GetCameraRotation());
-		SceneCapture->SetWorldRotation(NewRotation);
+		FVector NewLocation = UpdateSceneCaptureLocation(SceneCapture, PlayerCameraManager->GetCameraLocation());
+		ScreenRadius = GetProjectedScreenRadius(NewLocation);
+		UpdateSceneCaptureRotation(SceneCapture, PlayerCameraManager->GetCameraRotation());
 	}
 }
 
-void ASimplePortal::UpdateTargetTexture()
+
+void ASimplePortal::UpdateSceneCaptureTargetTexture()
 {
 	if (!CorePlayerController)
 		return;
@@ -184,13 +249,50 @@ void ASimplePortal::UpdateTargetTexture()
 	SetRTT(PortalTexture);
 	SceneCapture->TextureTarget = PortalTexture;
 
-	//	//Get the Projection Matrix
+	//Get the Projection Matrix
 	SceneCapture->CustomProjectionMatrix = CorePlayerController->GetCameraProjectionMatrix();
+	//CalcProjectionMatrix();
 
-	//	//Say Cheeeeese !
-
+	//Say Cheeeeese !
 	SceneCapture->CaptureScene();
 }
+
+void ASimplePortal::UpdateRecSceneCaptureTransform()
+{
+	// Changing Transform For Rec Scene Capture
+	RecSceneCapture->ClipPlaneBase = GetActorLocation() /*+ GetActorForwardVector() * ClipPlaneOffset*/;
+	RecSceneCapture->ClipPlaneNormal = GetActorForwardVector();
+	RecSceneCapture->FOVAngle = PlayerCameraManager->GetFOVAngle();
+
+	FVector NewLocation = UpdateSceneCaptureLocation(RecSceneCapture, SceneCapture->GetComponentLocation());
+	RecScreenRadius = GetProjectedScreenRadius(NewLocation);
+	UpdateSceneCaptureRotation(RecSceneCapture, SceneCapture->GetComponentRotation());
+}
+
+void ASimplePortal::CalcRecProjectionMatrix()
+{
+	FVector2D ScreenSpaceLocation;
+	if (PlayerController->ProjectWorldLocationToScreen(ConvertLocation(this, Target, Target->GetActorLocation()), ScreenSpaceLocation, true))
+	{
+		RecFinalPortalScale = RecScreenRadius * 500 * 0.01 / 2;
+		int32 ViewportX;
+		int32 ViewportY;
+		PlayerController->GetViewportSize(ViewportX, ViewportY);
+		RecFinalPortalOffset = (ScreenSpaceLocation / FVector2D(ViewportX, ViewportY) - 0.5 * 2) * (1 / RecFinalPortalScale);
+		ACorePlayerController* PC = Cast<ACorePlayerController>(PlayerController);
+		if (!PC)
+			return;
+		RecSceneCapture->CustomProjectionMatrix = PC->GenerateCameraProjectionMatrix(RecFinalPortalOffset.X, RecFinalPortalOffset.Y, FMath::Tan(PlayerCameraManager->GetFOVAngle() / 2), 1 / RecFinalPortalScale);
+	}
+}
+
+void ASimplePortal::UpdateRecSceneCaptureTargetTexture()
+{
+	RecSceneCapture->TextureTarget = PortalTexture;
+	RecSceneCapture->CustomProjectionMatrix = CorePlayerController->GetCameraProjectionMatrix();
+	RecSceneCapture->CaptureScene();
+}
+
 
 void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
@@ -223,10 +325,47 @@ void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AAc
 }
 
 
+float ASimplePortal::GetProjectedScreenRadius(FVector Position)
+{
+
+	float DisToObject = (Position - Target->GetActorLocation()).Size();
+	ASimplePortal* TargetPortal = Cast<ASimplePortal>(Target);
+	if (!TargetPortal)
+		return 0.0f;
+	float SphereRadius;
+
+	FVector Origin, BoxExtent;
+	UKismetSystemLibrary::GetComponentBounds(TargetPortal->PortalMesh, Origin, BoxExtent, SphereRadius);
+	float Atan = FMath::Atan(SphereRadius / DisToObject); // radians
+	int32 ViewportX, ViewportY;
+	PlayerController->GetViewportSize(ViewportX, ViewportY);
+	float Divide =	FVector2D(ViewportX, ViewportY).Size() / FMath::DegreesToRadians(PlayerCameraManager->GetFOVAngle());
+	float RadiusScreenspace = Divide * Atan / ViewportY;
+	return 	RadiusScreenspace;
+}
+
+void ASimplePortal::CalcProjectionMatrix()
+{
+	FVector2D ScreenSpaceLocation;
+	if (PlayerController->ProjectWorldLocationToScreen(Target->GetActorLocation(), ScreenSpaceLocation, true))
+	{
+		FinalPortalScale = ScreenRadius * 500 * 0.01 / 2;
+		int32 ViewportX;
+		int32 ViewportY;
+		PlayerController->GetViewportSize(ViewportX, ViewportY);
+		FinalPortalOffset = (ScreenSpaceLocation / FVector2D(ViewportX, ViewportY) - 0.5 * 2) * (1 / FinalPortalScale);
+		ACorePlayerController* PC = Cast<ACorePlayerController>(PlayerController);
+		if (!PC)
+			return;
+		SceneCapture->CustomProjectionMatrix = PC->GenerateCameraProjectionMatrix(FinalPortalOffset.X, FinalPortalOffset.Y, FMath::Tan(PlayerCameraManager->GetFOVAngle() / 2), 1 / FinalPortalScale);
+	}
+	// else disable Render
+}
+
 void ASimplePortal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (IsRenderEnable())
+	if (bRenderEnable)
 	{
 		UpdateSceneCapture();
 	}

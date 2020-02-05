@@ -11,6 +11,7 @@ class UStaticMeshComponent;
 class APortalManager;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
+class APlayerCameraManager;
 
 UCLASS()
 class JUMPPLUTFORMER_API ACorePortal : public AActor
