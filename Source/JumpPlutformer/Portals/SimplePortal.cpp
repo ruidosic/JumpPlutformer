@@ -195,7 +195,7 @@ void ASimplePortal::SetRenderTargetsWithMip(int Index)
 		RecSceneCapture->TextureTarget = TargetPortal->RenderTargetArray[CurrentMipLevel + 1];
 
 	// setup using Projection Matrix
-	SceneCapture->bUseCustomProjectionMatrix = !(CurrentMipLevel == 0);
+	SceneCapture->bUseCustomProjectionMatrix = (CurrentMipLevel != 0);
 	RecSceneCapture->bUseCustomProjectionMatrix = true;
 }
 
@@ -215,7 +215,7 @@ void ASimplePortal::Render()
 		// For Scene Capture
 		if (bCaptureFrame)
 		{
-			
+
 			UpdateSceneCaptureTransform();
 			UpdateRecSceneCaptureTransform();
 
@@ -224,10 +224,16 @@ void ASimplePortal::Render()
 			CalcProjectionMatrix();
 			CalcRecProjectionMatrix();
 
-			UpdateSceneCapture();
-			UpdateRecSceneCapture();
-		
-			SetMaterialParams(CurrentMipLevel, 1, CurrentMipLevel == 0, false, FinalPortalScale, FinalPortalOffset, ConvertLocation(this, Target, GetActorLocation()));
+			if (bCaptureFrame && bCaptureRecFrame)
+			{
+				UpdateSceneCapture();
+				UpdateRecSceneCapture();
+				SetMaterialParams(CurrentMipLevel, 1, CurrentMipLevel != 0, false, FinalPortalScale, FinalPortalOffset, ConvertLocation(this, Target, GetActorLocation()));
+			}
+			if (bCaptureFrame && !bCaptureRecFrame)
+			{
+				UpdateSceneCaptureWithoutRec();
+			}
 		}
 	}
 	else
@@ -235,6 +241,8 @@ void ASimplePortal::Render()
 		ClearRTT();
 	}
 }
+
+
 
 bool ASimplePortal::IsUpdateSceneCapture()
 {
@@ -255,10 +263,14 @@ bool ASimplePortal::IsUpdateSceneCapture()
 bool ASimplePortal::PlayerOverlapPortal()
 {
 	TArray<AActor*> OverlappingActors;
+
 	PortalMesh->GetOverlappingActors(OverlappingActors);
+	
 	bool PlayerOverlappingPortal = false;
+	
 	if (OverlappingActors.IsValidIndex(0) && PlayerPawn)
 		PlayerOverlappingPortal = OverlappingActors.Contains(PlayerPawn);
+	
 	return PlayerOverlappingPortal;
 }
 
@@ -321,6 +333,16 @@ void ASimplePortal::UpdateRecSceneCaptureTransform()
 	UpdateSceneCaptureRotation(RecSceneCapture, SceneCapture->GetComponentRotation());
 }
 
+void ASimplePortal::UpdateSceneCaptureWithoutRec()
+{
+	// UPDATE SceneCapture Without Rec
+	FVector PortalPosition = ConvertLocation(this, Target, GetActorLocation());
+	
+	SetMaterialParams(CurrentMipLevel, 0.6, true, true, FinalPortalScale, FinalPortalOffset, PortalPosition);
+	SceneCapture->CaptureScene();
+	SetMaterialParams(CurrentMipLevel, 1, CurrentMipLevel != 0, false, FinalPortalScale, FinalPortalOffset, PortalPosition);
+}
+
 void ASimplePortal::CalcRecProjectionMatrix()
 {
 	FVector2D ScreenSpaceLocation;
@@ -360,6 +382,7 @@ void ASimplePortal::SetMaterialParams(int TextureID, float Subscale, bool Custom
 	UKismetMaterialLibrary::SetScalarParameterValue(this, ParamCollection, FName("Subscale"), Subscale);
 	SetRTT(TargetPortal->RenderTargetArray[TextureID]);
 	DM_PortalMesh->SetVectorParameterValue(FName("TargetPosition"), FLinearColor(TargetPosition.X, TargetPosition.Y, TargetPosition.Z, 1));
+	UE_LOG(LogTemp, Warning, TEXT("Material Changed"))
 }
 
 
