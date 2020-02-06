@@ -9,6 +9,7 @@
 class USceneCaptureComponent2D;
 class UCanvasRenderTarget2D;
 class ACorePlayerController;
+class UMaterialParameterCollection;
 
 UCLASS()
 class JUMPPLUTFORMER_API ASimplePortal : public ACorePortal
@@ -52,15 +53,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "RecSceneCapture")
 	USceneCaptureComponent2D* RecSceneCapture;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ParamCollection")
+	UMaterialParameterCollection* ParamCollection;
+
 private:
+
+	// default param
 
 	bool bOpen = true;
 	bool bRenderEnable = true;
+	bool bCaptureFrame = false, bCaptureRecFrame = false;
 	FVector MeshSurfaceSize = FVector(500, 500, 500);
 	float ClipPlaneOffset = -30;
 
+	//render mip
+
 	int RenderMipLevels = 15;
 	float RenderMipScaledownSpeed = 0.1;
+	int CurrentMipLevel = 0;
 
 	UPROPERTY()
 	TArray<UCanvasRenderTarget2D*> RenderTargetArray;
@@ -71,18 +81,25 @@ private:
 	UPROPERTY()
 	ACorePlayerController* CorePlayerController;
 
-	int32 PreviousScreenSizeX;
-	int32 PreviousScreenSizeY;
+	UPROPERTY()
+	ASimplePortal* TargetPortal;
+
+	// Construct Init Params
 
 	void InitMeshes();
 	void InitSceneCapture();
 	void InitRecSceneCapture();
 
-	void GeneratePortalTexture();
-	void GenerateRenderTargetsByMipMap();
+	//Mips funct
 
-	void UpdateSceneCapture();
+	void GenerateRenderTargetsByMipMap();
+	void GeneratePortalTexture(int Index);
+	void SetRenderTargetsWithMip(int Index);
+	int CalcRenderMip();
+
+	void Render();
 	bool IsUpdateSceneCapture();
+	bool PlayerOverlapPortal();
 	FVector UpdateSceneCaptureLocation(USceneCaptureComponent2D* SceneCapture, FVector Location);
 	FRotator UpdateSceneCaptureRotation(USceneCaptureComponent2D* SceneCapture, FRotator Rotation);
 	
@@ -90,16 +107,20 @@ private:
 	
 	void UpdateSceneCaptureTransform();
 	void CalcProjectionMatrix();
-	void UpdateSceneCaptureTargetTexture();
+	void UpdateSceneCapture();
 
 	// Update Recursion Scene Capture
 
 	void UpdateRecSceneCaptureTransform();
 	void CalcRecProjectionMatrix();
-	void UpdateRecSceneCaptureTargetTexture();
+	void UpdateRecSceneCapture();
+
+	//
+	void SetMaterialParams(int TextureID, float Subscale, bool CustomMatrix, bool Recurse, float Invscale, FVector2D Offset, FVector TargetPosition);
 
 	FVector2D FinalPortalOffset, RecFinalPortalOffset;
 	float FinalPortalScale = 1, RecFinalPortalScale = 0;
+
 
 	float GetProjectedScreenRadius(FVector Position);
 	float ScreenRadius, RecScreenRadius;
