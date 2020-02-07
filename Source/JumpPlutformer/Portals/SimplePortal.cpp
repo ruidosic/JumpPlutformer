@@ -182,9 +182,10 @@ void ASimplePortal::GeneratePortalTexture(int Index) //tut nado dodelat
 
 void ASimplePortal::SetRenderTargetsWithMip(int Index)
 {
-	CurrentMipLevel = Index;
 	if (!TargetPortal)
 		return;
+
+	CurrentMipLevel = Index;
 	// setup SceneCapture Render Target
 	
 	if (TargetPortal->RenderTargetArray.IsValidIndex(CurrentMipLevel))
@@ -210,31 +211,28 @@ int ASimplePortal::CalcRenderMip()
 
 void ASimplePortal::Render()
 {
-	if (IsUpdateSceneCapture())
+	IsUpdateSceneCapture();
+	// For Scene Capture
+	if (bCaptureFrame)
 	{
-		// For Scene Capture
-		if (bCaptureFrame)
+		SetSceneCapturesParams();
+		SetSceneCapturesLocationAndRotation();
+
+		SetRenderTargetsWithMip(CalcRenderMip());
+
+		CalcProjectionMatrix();
+		CalcRecProjectionMatrix();
+
+		if (bCaptureFrame && bCaptureRecFrame)
 		{
-
-			UpdateSceneCaptureTransform();
-			UpdateRecSceneCaptureTransform();
-
-			SetRenderTargetsWithMip(CalcRenderMip());
-
-			CalcProjectionMatrix();
-			CalcRecProjectionMatrix();
-
-			if (bCaptureFrame && bCaptureRecFrame)
-			{
-				UpdateSceneCapture();
-				UpdateRecSceneCapture();
-				SetMaterialParams(CurrentMipLevel, 1, CurrentMipLevel != 0, false, FinalPortalScale, FinalPortalOffset, ConvertLocation(this, Target, GetActorLocation()));
-			}
-			if (bCaptureFrame && !bCaptureRecFrame)
-			{
-				UpdateSceneCaptureWithoutRec();
-			}
+			UpdateRecSceneCapture();
+			UpdateSceneCapture();
+			SetMaterialParams(CurrentMipLevel, 1, CurrentMipLevel != 0, false, FinalPortalScale, FinalPortalOffset, ConvertLocation(TargetPortal, this, Target->GetActorLocation()));
 		}
+		//if (bCaptureFrame && !bCaptureRecFrame)
+		//{
+		//	UpdateSceneCaptureWithoutRec();
+		//}
 	}
 	else
 	{
@@ -243,21 +241,13 @@ void ASimplePortal::Render()
 }
 
 
-
-bool ASimplePortal::IsUpdateSceneCapture()
+void ASimplePortal::IsUpdateSceneCapture()
 {
+	if (!TargetPortal)
+		return;
 	FVector Forward = PlayerCameraManager->GetCameraLocation() - GetActorLocation() + GetActorForwardVector() * 100;
 	bool BehindPortal = FVector::DotProduct(Forward, GetActorForwardVector()) > 0;
-	if (PlayerOverlapPortal() || BehindPortal && WasRecentlyRendered(0.1f))
-	{
-		TargetPortal->bCaptureFrame = true;
-		return true;
-	}
-	else
-	{
-		TargetPortal->bCaptureFrame = false;
-		return false;
-	}
+	TargetPortal->bCaptureFrame = PlayerOverlapPortal() || BehindPortal && WasRecentlyRendered(0.1f);
 }
 
 bool ASimplePortal::PlayerOverlapPortal()
@@ -288,49 +278,65 @@ FRotator ASimplePortal::UpdateSceneCaptureRotation(USceneCaptureComponent2D * Sc
 	return NewRotation;
 }
 
-void ASimplePortal::UpdateSceneCaptureTransform()
+ 
+void ASimplePortal::SetSceneCapturesParams()
 {
-	if (Target && PlayerCameraManager)
-	{
-		// Changing Transform For Scene Capture
-		SceneCapture->ClipPlaneBase = GetActorLocation() + GetActorForwardVector() * ClipPlaneOffset;
-		SceneCapture->ClipPlaneNormal = GetActorForwardVector();
-		SceneCapture->FOVAngle = PlayerCameraManager->GetFOVAngle();
+	SetClipPlane(SceneCapture);
+	SetClipPlane(RecSceneCapture);
+}
 
-		FVector NewLocation = UpdateSceneCaptureLocation(SceneCapture, PlayerCameraManager->GetCameraLocation());
-		ScreenRadius = GetProjectedScreenRadius(NewLocation);
-		UpdateSceneCaptureRotation(SceneCapture, PlayerCameraManager->GetCameraRotation());
-	}
+void ASimplePortal::SetClipPlane(USceneCaptureComponent2D * SceneCapture)
+{
+	if (!PlayerCameraManager)
+		return;
+
+	SceneCapture->FOVAngle = PlayerCameraManager->GetFOVAngle();
+	SceneCapture->bEnableClipPlane = true;
+	SceneCapture->ClipPlaneBase = GetActorLocation() + GetActorForwardVector() * ClipPlaneOffset;
+	SceneCapture->ClipPlaneNormal = GetActorForwardVector();
+}
+
+
+void ASimplePortal::SetSceneCapturesLocationAndRotation()
+{
+	if (!PlayerCameraManager || !TargetPortal)
+		return;
+	
+	// SceneCapture
+	FRotator NewRotation = ConvertRotation(Target, this, PlayerCameraManager->GetTransformComponent()->GetComponentRotation());
+	FVector NewLocation = ConvertLocation(Target, this, PlayerCameraManager->GetTransformComponent()->GetComponentLocation());
+	SceneCapture->SetWorldLocationAndRotation(NewLocation, NewRotation);
+
+	ScreenRadius = GetProjectedScreenRadius(NewLocation);
+
+	// RecSceneCapture
+	NewRotation = ConvertRotation( Target, this, SceneCapture->GetComponentRotation());
+	NewLocation = ConvertLocation( Target, this, SceneCapture->GetComponentLocation());
+	RecSceneCapture->SetWorldLocationAndRotation(NewLocation, NewRotation);
+
+	RecScreenRadius = GetProjectedScreenRadius(NewLocation);
 }
 
 
 void ASimplePortal::UpdateSceneCapture()
 {
-	FVector PortalRecPosition = ConvertLocation(this, Target, GetActorLocation());
-	if (CurrentMipLevel != 0)
-	{
-		SetMaterialParams(CurrentMipLevel + 1, 0.6, true, false, RecFinalPortalScale / FinalPortalScale, RecFinalPortalOffset - FinalPortalOffset / RecFinalPortalScale / FinalPortalScale, PortalRecPosition);
-	}
-	else
-	{
-		SetMaterialParams(CurrentMipLevel + 1, 0.6, false, true, RecFinalPortalScale, RecFinalPortalOffset, PortalRecPosition);
-	}
+	//FVector PortalRecPosition = ConvertLocation(this, TargetPortal, Target->GetActorLocation());
+	//if (CurrentMipLevel != 0)
+	//{
+	//	SetMaterialParams(CurrentMipLevel + 1, 0.6, true, false, RecFinalPortalScale / FinalPortalScale, RecFinalPortalOffset - FinalPortalOffset / RecFinalPortalScale / FinalPortalScale, PortalRecPosition);
+	//}
+	//else
+	//{
+	//	SetMaterialParams(CurrentMipLevel + 1, 0.6, false, true, RecFinalPortalScale, RecFinalPortalOffset, PortalRecPosition);
+	//}
 	SceneCapture->CaptureScene();
 }
 
-void ASimplePortal::UpdateRecSceneCaptureTransform()
+void ASimplePortal::UpdateRecSceneCapture()
 {
-	if (!PlayerCameraManager)
-		return;
-
-	// Changing Transform For Rec Scene Capture
-	RecSceneCapture->ClipPlaneBase = GetActorLocation() + GetActorForwardVector() * ClipPlaneOffset;
-	RecSceneCapture->ClipPlaneNormal = GetActorForwardVector();
-	RecSceneCapture->FOVAngle = PlayerCameraManager->GetFOVAngle();
-
-	FVector NewLocation = UpdateSceneCaptureLocation(RecSceneCapture, SceneCapture->GetComponentLocation());
-	RecScreenRadius = GetProjectedScreenRadius(NewLocation);
-	UpdateSceneCaptureRotation(RecSceneCapture, SceneCapture->GetComponentRotation());
+	//FVector PortalRecPosition = ConvertLocation(this, TargetPortal, Target->GetActorLocation());
+	//SetMaterialParams(CurrentMipLevel + 1, 0.6, true, true, RecFinalPortalScale, RecFinalPortalOffset, PortalRecPosition);
+	RecSceneCapture->CaptureScene();
 }
 
 void ASimplePortal::UpdateSceneCaptureWithoutRec()
@@ -349,14 +355,10 @@ void ASimplePortal::CalcRecProjectionMatrix()
 	if (PlayerController && PlayerController->ProjectWorldLocationToScreen(ConvertLocation(this, Target, Target->GetActorLocation()), ScreenSpaceLocation, true))
 	{
 		bCaptureRecFrame = true;
-		RecFinalPortalScale = RecScreenRadius * 500 * 0.01 / 2;
-		int32 ViewportX;
-		int32 ViewportY;
-		PlayerController->GetViewportSize(ViewportX, ViewportY);
-		RecFinalPortalOffset = (ScreenSpaceLocation / FVector2D(ViewportX, ViewportY) - 0.5 * 2) * (1 / RecFinalPortalScale);
+		CalcScaleAndOffset(RecScreenRadius, ScreenSpaceLocation, RecFinalPortalScale, RecFinalPortalScale, RecFinalPortalOffset);
 		if (!CorePlayerController)
 			return;
-		RecSceneCapture->CustomProjectionMatrix = CorePlayerController->GenerateCameraProjectionMatrix(RecFinalPortalOffset.X, RecFinalPortalOffset.Y, FMath::Tan(PlayerCameraManager->GetFOVAngle() / 2), 1 / RecFinalPortalScale);
+		RecSceneCapture->CustomProjectionMatrix = CorePlayerController->GenerateCameraProjectionMatrix(RecFinalPortalOffset.X, RecFinalPortalOffset.Y, FMath::RadiansToDegrees(FMath::Tan(PlayerCameraManager->GetFOVAngle()) / 2), 1 / RecFinalPortalScale);
 	}
 	else
 	{
@@ -364,12 +366,7 @@ void ASimplePortal::CalcRecProjectionMatrix()
 	}
 }
 
-void ASimplePortal::UpdateRecSceneCapture()
-{
-	FVector PortalRecPosition = ConvertLocation(this, Target, GetActorLocation());
-	SetMaterialParams(CurrentMipLevel + 1, 0.6, true, true, RecFinalPortalScale, RecFinalPortalOffset, PortalRecPosition);
-	RecSceneCapture->CaptureScene();
-}
+
 
 void ASimplePortal::SetMaterialParams(int TextureID, float Subscale, bool CustomMatrix, bool Recurse, float Invscale, FVector2D Offset, FVector TargetPosition)
 {
@@ -382,7 +379,6 @@ void ASimplePortal::SetMaterialParams(int TextureID, float Subscale, bool Custom
 	UKismetMaterialLibrary::SetScalarParameterValue(this, ParamCollection, FName("Subscale"), Subscale);
 	SetRTT(TargetPortal->RenderTargetArray[TextureID]);
 	DM_PortalMesh->SetVectorParameterValue(FName("TargetPosition"), FLinearColor(TargetPosition.X, TargetPosition.Y, TargetPosition.Z, 1));
-	UE_LOG(LogTemp, Warning, TEXT("Material Changed"))
 }
 
 
@@ -401,7 +397,6 @@ void ASimplePortal::PortalBeginOverlap(UPrimitiveComponent * OverlappedComp, AAc
 		FVector Velocity = PhysicsMesh->GetComponentVelocity();
 		if (FVector::DotProduct(Velocity.GetSafeNormal(), GetActorForwardVector()) < 0)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Overlap Physics Object"));
 			TeleportActor(OtherActor);
 		}
 	}
@@ -423,7 +418,6 @@ float ASimplePortal::GetProjectedScreenRadius(FVector Position)
 		return 0.0f;
 	float DisToObject = (Position - Target->GetActorLocation()).Size();
 	float SphereRadius;
-
 	FVector Origin, BoxExtent;
 	UKismetSystemLibrary::GetComponentBounds(TargetPortal->PortalMesh, Origin, BoxExtent, SphereRadius);
 	float Atan = FMath::Atan(SphereRadius / DisToObject); // radians
@@ -431,7 +425,7 @@ float ASimplePortal::GetProjectedScreenRadius(FVector Position)
 	PlayerController->GetViewportSize(ViewportX, ViewportY);
 	float Divide =	FVector2D(ViewportX, ViewportY).Size() / FMath::DegreesToRadians(PlayerCameraManager->GetFOVAngle());
 	float RadiusScreenspace = Divide * Atan / ViewportY;
-	return 	RadiusScreenspace;
+	return RadiusScreenspace;
 }
 
 void ASimplePortal::CalcProjectionMatrix()
@@ -439,20 +433,31 @@ void ASimplePortal::CalcProjectionMatrix()
 	FVector2D ScreenSpaceLocation;
 	if (PlayerController && PlayerController->ProjectWorldLocationToScreen(Target->GetActorLocation(), ScreenSpaceLocation, true) || CurrentMipLevel == 0)
 	{
-		FinalPortalScale = ScreenRadius * 500 * 0.01 / 2;
-		int32 ViewportX;
-		int32 ViewportY;
-		PlayerController->GetViewportSize(ViewportX, ViewportY);
-		FinalPortalOffset = (ScreenSpaceLocation / FVector2D(ViewportX, ViewportY) - 0.5 * 2) * (1 / FinalPortalScale);
 		if (!CorePlayerController)
 			return;
-		SceneCapture->CustomProjectionMatrix = CorePlayerController->GenerateCameraProjectionMatrix(FinalPortalOffset.X, FinalPortalOffset.Y, FMath::Tan(PlayerCameraManager->GetFOVAngle() / 2), 1 / FinalPortalScale);
+		CalcScaleAndOffset(ScreenRadius, ScreenSpaceLocation, FinalPortalScale, FinalPortalScale, FinalPortalOffset);
+		SceneCapture->CustomProjectionMatrix = CorePlayerController->GenerateCameraProjectionMatrix(FinalPortalOffset.X, FinalPortalOffset.Y, FMath::RadiansToDegrees(FMath::Tan(PlayerCameraManager->GetFOVAngle()) / 2), 1 / FinalPortalScale);
 	}
 	else
 	{
 		// disable Render
 		bCaptureFrame = false;
 	}
+}
+
+void ASimplePortal::CalcScaleAndOffset(float ScreenRadius, FVector2D PortalScreenSpacePosition, float FinalPortalScale, float & OutScale, FVector2D & OutOffset)
+{
+	if (!PlayerController)
+		return;
+
+	int32 ViewportX = 1280, ViewportY = 720;
+	PlayerController->GetViewportSize(ViewportX, ViewportY);
+
+	// Return Float Value
+	OutScale = ScreenRadius * 500 * 0.01 / 2;
+
+	//Return Vector2D
+	OutOffset = (PortalScreenSpacePosition / FVector2D(ViewportX, ViewportY)) - 0.5 * 2 * (1 / FinalPortalScale);
 }
 
 void ASimplePortal::Tick(float DeltaTime)

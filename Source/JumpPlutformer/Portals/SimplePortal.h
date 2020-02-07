@@ -98,24 +98,32 @@ private:
 	int CalcRenderMip();
 
 	void Render();
-	bool IsUpdateSceneCapture();
+	void IsUpdateSceneCapture();
 	bool PlayerOverlapPortal();
 	FVector UpdateSceneCaptureLocation(USceneCaptureComponent2D* SceneCapture, FVector Location);
 	FRotator UpdateSceneCaptureRotation(USceneCaptureComponent2D* SceneCapture, FRotator Rotation);
 	
-	// Update Scene Capture
-	
-	void UpdateSceneCaptureTransform();
-	void CalcProjectionMatrix();
-	void UpdateSceneCapture();
+	// Update Location, Rotation, Clip Plane for SceneCapture and RecSceneCapture
 
-	// Update Recursion Scene Capture
+	void SetSceneCapturesParams();
+	void SetClipPlane(USceneCaptureComponent2D* SceneCapture);
 
-	void UpdateRecSceneCaptureTransform();
+	void SetSceneCapturesLocationAndRotation();
+
+
+	// Calculate Projection Matrix for SceneCapture and RecSceneCapture
+
 	void CalcRecProjectionMatrix();
-	void UpdateRecSceneCapture();
+	void CalcProjectionMatrix();
+	void CalcScaleAndOffset(float ScreenRadius, FVector2D PortalScreenSpacePosition, float FinalPortalScale, float &OutScale, FVector2D &OutOffset);
 
+	// Update Captures 
+
+	void UpdateSceneCapture();
+	void UpdateRecSceneCapture();
 	void UpdateSceneCaptureWithoutRec();
+
+	
 
 	//
 	void SetMaterialParams(int TextureID, float Subscale, bool CustomMatrix, bool Recurse, float Invscale, FVector2D Offset, FVector TargetPosition);

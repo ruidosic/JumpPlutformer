@@ -32,11 +32,11 @@ FMatrix ACorePlayerController::GetCameraProjectionMatrix()
 
 FMatrix ACorePlayerController::GenerateCameraProjectionMatrix(float X, float Y, float HalfFOV, float Scale)
 {
-	int32 ViewportX, ViewportY;
+	int32 ViewportX = 1280, ViewportY = 720;
 	GetViewportSize(ViewportX, ViewportY);
-	float ScaleForY = ((HalfFOV / Scale) / ViewportY) * ViewportX;
+	float ScaleForY = ((Scale / HalfFOV) / ViewportY) * ViewportX;
 
-	FPlane XPlane = FPlane(FVector(HalfFOV / Scale, 0, 0), 0);
+	FPlane XPlane = FPlane(FVector(Scale / HalfFOV, 0, 0), 0);
 	FPlane YPlane = FPlane(FVector(0, ScaleForY, 0 ), 0);
 	FPlane ZPlane = FPlane(FVector(-X, Y, 0), 1);
 	FPlane WPlane = FPlane(FVector(0, 0, 1), 0.1);
