@@ -136,6 +136,11 @@ void ASimplePortal::BeginPlay()
 	if (bRenderEnable)
 	{
 		GenerateRenderTargetsByMipMap();
+		if (TargetPortal && TargetPortal->RenderTargetArray.IsValidIndex(0))
+		{
+			SceneCapture->TextureTarget = TargetPortal->RenderTargetArray[0];
+			TargetPortal->SetRTT(TargetPortal->RenderTargetArray[0]);
+		}
 		SetRenderTargetsWithMip(0);
 	}
 	PortalMesh->OnComponentBeginOverlap.AddDynamic(this, &ASimplePortal::PortalBeginOverlap);
@@ -220,8 +225,8 @@ void ASimplePortal::Render()
 
 		SetRenderTargetsWithMip(CalcRenderMip());
 
-		CalcProjectionMatrix();
-		CalcRecProjectionMatrix();
+		//CalcProjectionMatrix();
+		//CalcRecProjectionMatrix();
 
 		if (bCaptureFrame && bCaptureRecFrame)
 		{
@@ -308,13 +313,14 @@ void ASimplePortal::SetSceneCapturesLocationAndRotation()
 	SceneCapture->SetWorldLocationAndRotation(NewLocation, NewRotation);
 
 	ScreenRadius = GetProjectedScreenRadius(NewLocation);
-
+	UE_LOG(LogTemp, Warning, TEXT("Screen Radius = %f"), ScreenRadius);
 	// RecSceneCapture
 	NewRotation = ConvertRotation( Target, this, SceneCapture->GetComponentRotation());
 	NewLocation = ConvertLocation( Target, this, SceneCapture->GetComponentLocation());
 	RecSceneCapture->SetWorldLocationAndRotation(NewLocation, NewRotation);
 
 	RecScreenRadius = GetProjectedScreenRadius(NewLocation);
+	UE_LOG(LogTemp, Warning, TEXT("Rec Screen Radius = %f"), RecScreenRadius);
 }
 
 
