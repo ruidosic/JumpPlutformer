@@ -35,7 +35,26 @@ void AAdvancedPortal::BeginPlay()
 
 void AAdvancedPortal::OnPortalTriggerOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	ActorToTeleport = OtherActor;
+	if (OtherActor->FindComponentByClass<UStaticMeshComponent>()->IsSimulatingPhysics())
+	{
+		UStaticMeshComponent* PhysicsMesh = OtherActor->FindComponentByClass<UStaticMeshComponent>();
+		if (!PhysicsMesh)
+			return;
+		FVector Velocity = PhysicsMesh->GetComponentVelocity();
+		if (FVector::DotProduct(Velocity.GetSafeNormal(), GetActorForwardVector()) < 0)
+		{
+			TeleportActor(OtherActor);
+		}
+	}
+	// for player pawn
+	else
+	{
+		if (IsVelocityDirectTowardPortal(OtherActor, this) && IsCrossPortalNextFrame(OtherActor, this))
+		{
+			PlayerCameraManager->SetGameCameraCutThisFrame();
+			TeleportActor(OtherActor);
+		}
+	}
 }
 
 void AAdvancedPortal::Tick(float DeltaTime)
