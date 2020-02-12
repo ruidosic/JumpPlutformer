@@ -123,8 +123,6 @@ private:
 	void UpdateRecSceneCapture();
 	void UpdateSceneCaptureWithoutRec();
 
-	
-
 	//
 	void SetMaterialParams(int TextureID, float Subscale, bool CustomMatrix, bool Recurse, float Invscale, FVector2D Offset, FVector TargetPosition);
 
