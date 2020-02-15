@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Portals/PortalInterface.h"
+#include "Core/CharacterMovementInterface.h"
 #include "CoreMainCharacter.generated.h"
 
 class ACorePlayerController;
 
 UCLASS()
-class JUMPPLUTFORMER_API ACoreMainCharacter : public ACharacter, public IPortalInterface
+class JUMPPLUTFORMER_API ACoreMainCharacter : public ACharacter, public ICharacterMovementInterface
 {
 	GENERATED_BODY()
 
@@ -27,7 +27,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	ACorePlayerController* PC;
 
-	virtual void OnLandedRotation_Implementation(AActor* CurrentPortal, AActor* TargetPortal) override;
+	virtual void RotationAfterTeleport_Implementation(AActor* CurrentPortal, AActor* TargetPortal) override;
 	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

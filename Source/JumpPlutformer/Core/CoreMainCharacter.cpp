@@ -25,7 +25,7 @@ void ACoreMainCharacter::BeginPlay()
 
 
 
-void ACoreMainCharacter::OnLandedRotation_Implementation(AActor * CurrentPortal, AActor * TargetPortal)
+void ACoreMainCharacter::RotationAfterTeleport_Implementation(AActor * CurrentPortal, AActor * TargetPortal)
 {
 }
 

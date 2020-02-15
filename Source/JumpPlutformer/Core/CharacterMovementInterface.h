@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "PortalInterface.generated.h"
+#include "CharacterMovementInterface.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
-class UPortalInterface : public UInterface
+class UCharacterMovementInterface : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -16,7 +16,7 @@ class UPortalInterface : public UInterface
 /**
  * 
  */
-class JUMPPLUTFORMER_API IPortalInterface
+class JUMPPLUTFORMER_API ICharacterMovementInterface
 {
 	GENERATED_BODY()
 
@@ -24,6 +24,8 @@ public:
 
 	// overriden in BP_MainPawn
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void OnLandedRotation(AActor* CurrentPortal, AActor* TargetPortal);
+	void RotationAfterTeleport(AActor* CurrentPortal, AActor* TargetPortal);
 
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void JumpEvent(float JumpZ);
 };

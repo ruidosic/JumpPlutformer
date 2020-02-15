@@ -12,7 +12,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Core/CorePlayerController.h"
 #include "Camera/PlayerCameraManager.h"
-#include "Portals/PortalInterface.h"
+#include "Core/CharacterMovementInterface.h"
 #include "Materials/MaterialInterface.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
@@ -265,9 +265,9 @@ void ACorePortal::TeleportActor(AActor * TeleportActor)
 
 	ChangePlayerControlRotation(TeleportActor);
 
-	if (TeleportActor->Implements<UPortalInterface>())
+	if (TeleportActor->Implements<UCharacterMovementInterface>())
 	{
-		IPortalInterface::Execute_OnLandedRotation(TeleportActor, this, Target);
+		ICharacterMovementInterface::Execute_RotationAfterTeleport(TeleportActor, this, Target);
 	}
 
 	LastPosition = NewLocation;
