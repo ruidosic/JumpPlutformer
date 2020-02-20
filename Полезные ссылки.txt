@@ -3,3 +3,6 @@ https://www.youtube.com/watch?v=j6mskTgL7kU
 
 Потоки UE4 С++
 https://www.youtube.com/watch?v=1lBadANnJaw&list=WL&index=2&t=0s
+
+UE4 Code Style
+https://github.com/CosmoMyzrailGorynych/ue4-style-guide-rus/blob/master/README.md#anc-ui
